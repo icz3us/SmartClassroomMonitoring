@@ -102,6 +102,7 @@ const reading = () => ({
   redLEDBlinking: false,
   motionLED: false,
   timestamp: serverTimestamp(),
+  sampledAt: Date.now(),
 });
 test("anonymous and unapproved accounts cannot read or write", async () => {
   for (const db of [
@@ -157,6 +158,12 @@ test("device can atomically upload only its own valid paths", async () => {
     set(ref(db, "latestReadings/classroom-01"), { ...reading(), battery: 100 }),
   );
   await assertFails(set(ref(db, "latestReadings/classroom-01"), null));
+  await assertFails(
+    set(ref(db, "latestReadings/classroom-01"), {
+      ...reading(),
+      sampledAt: Date.now() + 60000,
+    }),
+  );
 });
 test("sensor failure heartbeat does not require invalid sensor values", async () => {
   const db = env.authenticatedContext("esp32").database();

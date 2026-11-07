@@ -17,11 +17,11 @@ const float WARN_TEMP = 32.0;
 const float DANGER_TEMP = 35.0;
 DHT dht(DHTPIN, DHTTYPE);
 
-struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; };
+struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; uint64_t sampledAt; };
 struct Event { char type[24]; float temperature; bool hasTemperature; uint64_t timestamp; uint32_t uptime; uint32_t sequence; };
 void fillReading(JsonObject object, const Sample& sample);
 void enqueueEvent(const char* type, float temperature = NAN);
-Sample current = {NAN, NAN, false, true, 0, false, false, false};
+Sample current = {NAN, NAN, false, true, 0, false, false, false, 0};
 portMUX_TYPE sampleMux = portMUX_INITIALIZER_UNLOCKED;
 QueueHandle_t eventQueue;
 uint32_t eventSequence = 0;
@@ -77,6 +77,7 @@ void fillReading(JsonObject object, const Sample& sample) {
   object["temperatureStatus"] = statusName(sample.status); object["greenLED"] = sample.green;
   object["redLED"] = sample.red; object["redLEDBlinking"] = sample.blinking;
   object["motionLED"] = sample.motion; object["timestamp"][".sv"] = "timestamp";
+  if (sample.sampledAt) object["sampledAt"] = sample.sampledAt;
 }
 String uniqueKey(uint64_t time, uint32_t sequence) {
   char key[64]; snprintf(key,sizeof(key),"%013llu-%08lx-%08lx",(unsigned long long)time,(unsigned long)bootId,(unsigned long)sequence); return String(key);
@@ -94,7 +95,8 @@ void networkTask(void*) {
       if (now-lastWifiAttempt > 10000) { lastWifiAttempt=now; WiFi.reconnect(); }
       continue;
     }
-    if (!clockReady() || now-lastAttempt < retryDelay) continue;
+    bool eventPending = hasEvent || uxQueueMessagesWaiting(eventQueue) > 0;
+    if (!clockReady() || (now-lastAttempt < retryDelay && (!eventPending || retryDelay != FIREBASE_UPLOAD_INTERVAL_MS))) continue;
     lastAttempt=now;
     if (!authenticate()) { retryDelay=retryDelay<30000?retryDelay*2:60000; restored=true; continue; }
     Sample snapshot; portENTER_CRITICAL(&sampleMux); snapshot=current; portEXIT_CRITICAL(&sampleMux);
@@ -149,6 +151,7 @@ void loop() {
   static bool previousMotion=false; static uint8_t previousStatus=0;
   Sample next; portENTER_CRITICAL(&sampleMux); next=current; portEXIT_CRITICAL(&sampleMux);
   uint32_t now=millis(); bool motion=digitalRead(PIR_PIN)==HIGH;
+  next.sampledAt = clockReady() ? epochMs() : 0;
   digitalWrite(MOTION_LED,motion?HIGH:LOW); next.motion=motion;
   if(motion!=previousMotion) { enqueueEvent(motion?"motion_started":"motion_stopped"); Serial.println(motion?"Motion detected":"Motion stopped"); previousMotion=motion; }
   if(now-lastDht>=2000) {

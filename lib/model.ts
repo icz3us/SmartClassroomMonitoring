@@ -10,6 +10,7 @@ export interface Reading {
   redLEDBlinking: boolean;
   motionLED: boolean;
   timestamp: number;
+  sampledAt?: number;
 }
 export interface SensorEvent {
   id: string;
@@ -26,6 +27,21 @@ export interface SensorEvent {
   temperature?: number;
 }
 export const deviceId = process.env.NEXT_PUBLIC_DEVICE_ID || "classroom-01";
+export function motionFor(reading: Reading | null, events: SensorEvent[]) {
+  let motion = reading?.motion ?? false;
+  let timestamp = reading?.sampledAt ?? reading?.timestamp ?? 0;
+  for (const event of events) {
+    if (
+      (event.type === "motion_started" || event.type === "motion_stopped") &&
+      Number.isFinite(event.timestamp) &&
+      event.timestamp >= timestamp
+    ) {
+      motion = event.type === "motion_started";
+      timestamp = event.timestamp;
+    }
+  }
+  return motion;
+}
 export const statusFor = (temperature: number): TemperatureStatus =>
   temperature > 35 ? "danger" : temperature > 32 ? "warning" : "normal";
 export function isReadingFresh(

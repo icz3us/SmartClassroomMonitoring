@@ -441,13 +441,21 @@ function Overview() {
           </div>
           <div className="motion-value">
             {m.fresh
-              ? r?.motion
+              ? m.motion
                 ? "Motion detected"
-                : "No motion"
+                : m.recentMotion
+                  ? "Recent motion"
+                  : "No motion"
               : "Unavailable"}
           </div>
-          <Badge tone={m.fresh && r?.motion ? "normal" : "muted"}>
-            {m.fresh ? "PIR sensor active" : "No fresh signal"}
+          <Badge
+            tone={m.fresh && (m.motion || m.recentMotion) ? "normal" : "muted"}
+          >
+            {m.fresh
+              ? !m.motion && m.recentMotion
+                ? "Detected recently · PIR now idle"
+                : "PIR sensor active"
+              : "No fresh signal"}
           </Badge>
           <div className="metric-bottom">
             Last detected <span>{m.formatTime(m.lastMotion)}</span>
@@ -720,13 +728,14 @@ function Motion() {
           <div className="feature-value">
             <Activity />
             {m.fresh
-              ? m.latest?.motion
+              ? m.motion
                 ? "Motion detected"
                 : "No motion detected"
               : "Unavailable"}
           </div>
           <p className="padded-note">
             Last detected: {m.formatTime(m.lastMotion)}
+            {!m.motion && m.recentMotion && " · Motion detected recently"}
           </p>
         </Panel>
         <Panel title="Recorded detections">

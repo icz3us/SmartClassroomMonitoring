@@ -23,6 +23,8 @@ import { subscribeLastMotion } from "@/lib/motion.mts";
 import {
   deviceId,
   deviceConnectionStatus,
+  motionFor,
+  isReadingFresh,
   type Reading,
   type SensorEvent,
 } from "@/lib/model";
@@ -219,6 +221,8 @@ function useMonitorState() {
     preferences,
     savePreferences,
     latest,
+    motion: motionFor(latest, events),
+    recentMotion: fresh && isReadingFresh(lastMotion ?? undefined, now, 10),
     history: history.filter((r) => r.timestamp >= cutoff),
     events: events.filter((e) => e.timestamp >= cutoff),
     period,

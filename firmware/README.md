@@ -31,6 +31,7 @@ The loop does not perform network requests. A FreeRTOS task on core 0 performs H
 - Events retain their NTP-synchronized occurrence timestamp and carry a separate server `receivedAt`. Before initial NTP sync, occurrence is reconstructed from uptime. Arrival time is never presented as the time of earlier movement. Device occurrence time is not a trusted server measurement; the rules bound its age and future skew.
 - A pending event keeps a stable key across retries, including a lost HTTP acknowledgment. Rules allow identical event retries but prohibit editing its type, occurrence time or temperature. HTTP retries may produce duplicate historical snapshots or restoration events after an ambiguous acknowledgment; motion/temperature transition counts remain keyed and deduplicated.
 - `redLEDBlinking` reports warning behavior; `redLED` reports the sampled output level. UI displays “Blinking,” not rapid LED animation.
+- Snapshots include an optional device-clock `sampledAt` capture time so the website can order motion events against delayed snapshots. Server `timestamp` still determines freshness. The network task sends pending events ahead of the normal upload interval when healthy, while preserving failure backoff.
 - Authentication ID tokens refresh two minutes before expiry using Firebase Secure Token REST API. Revoked/invalid refresh tokens trigger a new device-account sign-in. Neither tokens, passwords nor full request URLs are printed.
 
 ## Credential security
