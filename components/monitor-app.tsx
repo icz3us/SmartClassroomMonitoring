@@ -383,9 +383,6 @@ function Overview() {
               : "Check device power, Wi-Fi, and Firebase connectivity."}
           </p>
         </div>
-        <Badge tone={available ? r?.temperatureStatus : "muted"}>
-          {status}
-        </Badge>
       </div>
       <div className="metric-grid">
         <section className="metric">
@@ -394,7 +391,7 @@ function Overview() {
             <Thermometer size={19} />
           </div>
           <div className="metric-value">
-            {available ? (r?.temperature?.toFixed(1) ?? "—") : "—"}
+            {available ? (r?.temperature?.toFixed(1) ?? "–") : "–"}
             <span>°C</span>
           </div>
           <Badge tone={available ? r?.temperatureStatus : "muted"}>
@@ -420,7 +417,7 @@ function Overview() {
             <Droplets size={19} />
           </div>
           <div className="metric-value">
-            {available ? (r?.humidity?.toFixed(0) ?? "—") : "—"}
+            {available ? (r?.humidity?.toFixed(0) ?? "–") : "–"}
             <span>% RH</span>
           </div>
           <span className="metric-note">Relative humidity</span>
@@ -430,7 +427,7 @@ function Overview() {
           <div className="metric-bottom">
             <Waves size={16} />
             {m.history.length > 1
-              ? `Recent average ${summarize(m.history, "humidity")?.avg.toFixed(1) ?? "—"}%`
+              ? `Recent average ${summarize(m.history, "humidity")?.avg.toFixed(1) ?? "–"}%`
               : "Awaiting humidity trend"}
           </div>
         </section>
@@ -607,7 +604,7 @@ function Analytics() {
                           : "Maximum"}
                     </span>
                     <strong>
-                      {stats?.[k].toFixed(1) ?? "—"}
+                      {stats?.[k].toFixed(1) ?? "–"}
                       <small>{key === "temperature" ? "°C" : "%"}</small>
                     </strong>
                   </div>
@@ -620,7 +617,7 @@ function Analytics() {
       <div className="stats-grid">
         <Panel
           title="Temperature"
-          detail={`Current: ${m.fresh && !m.latest?.sensorError ? (m.latest?.temperature?.toFixed(1) ?? "—") : "—"}°C`}
+          detail={`Current: ${m.fresh && !m.latest?.sensorError ? (m.latest?.temperature?.toFixed(1) ?? "–") : "–"}°C`}
         >
           <SensorChart />
         </Panel>
@@ -676,8 +673,8 @@ function Analytics() {
               {rows.slice(page * 20, page * 20 + 20).map((r) => (
                 <tr key={r.timestamp}>
                   <td>{m.formatTime(r.timestamp)}</td>
-                  <td>{r.temperature ?? "—"}°C</td>
-                  <td>{r.humidity ?? "—"}%</td>
+                  <td>{r.temperature ?? "–"}°C</td>
+                  <td>{r.humidity ?? "–"}%</td>
                   <td>{r.motion ? "Detected" : "No motion"}</td>
                   <td>
                     <Badge tone={r.sensorError ? "muted" : r.temperatureStatus}>
@@ -1083,12 +1080,6 @@ export function MonitorApp({ page }: { page: string }) {
                           : "Make this workspace yours."}
               </p>
             </div>
-            <span className="live-label">
-              <span className={`status-dot ${m.fresh ? "online-dot" : ""}`} />
-              {m.fresh
-                ? "Live updates"
-                : `Device ${m.connectionLabel.toLowerCase()}`}
-            </span>
           </div>
           {m.error && (
             <div className="error-message" role="alert">

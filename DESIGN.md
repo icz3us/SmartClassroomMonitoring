@@ -5,8 +5,8 @@ colors:
   background: "#f7f8fa"
   panel: "#fff"
   foreground: "#202b32"
-  muted: "#6c7680"
-  border: "#e5e9ec"
+  muted: "#58666d"
+  border: "#dce2e2"
   accent: "#237a57"
   accent-soft: "#edf6f0"
   sidebar: "#fff"
@@ -48,10 +48,10 @@ typography:
     fontWeight: 650
     letterSpacing: "-0.8px"
   title:
-    fontSize: "14px"
+    fontSize: "15px"
     fontWeight: 620
   metric:
-    fontSize: "39px"
+    fontSize: "44px"
     fontWeight: 550
     lineHeight: 1.4
     letterSpacing: "-1.5px"
@@ -59,7 +59,7 @@ typography:
     fontSize: "12px"
     fontWeight: 500
   badge:
-    fontSize: "10px"
+    fontSize: "11px"
     fontWeight: 500
   mono:
     fontFamily: "var(--font-geist-mono), monospace"
@@ -122,6 +122,23 @@ components:
 
 # Design System: Classroom Monitor
 
+## Visual refinement, November 7, 2026
+
+Reading this as: a classroom operations dashboard for teachers and evaluators, in a calm, neutral monitoring style, dial ENERGY 1 / RHYTHM 2 / MOTION 1.
+
+- Readings remain the focal point; larger values and readable timestamps distinguish current conditions from supporting details.
+- Supporting text uses 12–13px instead of tiny labels so teachers can scan the dashboard on laptops and phones.
+- Green stays reserved for actions and healthy states; amber, red, and gray keep their existing operational meanings.
+- Flat bordered panels group related measurements without decorative elevation or new nested containers.
+- Geist and the existing sensor/navigation icons stay because their consistent shapes help scanning; no new assets are introduced.
+- Tablet columns reflow earlier because three cramped sensor panels make thresholds and motion descriptions difficult to read.
+- Controls receive larger hit areas and visible focus so the same interface supports touch and keyboard input; the mobile Menu label makes navigation discoverable without relying on icon recognition.
+- The sign-in form takes visual priority over its supporting introduction; no oversized marketing headline is needed to access a classroom monitor.
+- Short color transitions acknowledge interaction; no new animation competes with live sensor updates.
+- The header owns the workspace-wide connection indicator. Page headings omit duplicate connection text, and the condition banner uses its explanatory sentence without another status badge.
+
+This pass changes presentation only. Data subscriptions, authentication, event handling, settings behavior, exports, database rules, and firmware are outside its scope.
+
 ## Overview
 
 **Creative North Star: "Quiet classroom operations"**
@@ -133,29 +150,29 @@ The user-pinned neutral SaaS Operate dashboard prioritizes current readings, fre
 - Color-plus-text states and honest unavailable readings.
 - Responsive navigation and single-column phone reading order.
 
-Source of truth: `app/globals.css` and `components/monitor-app.tsx`; direction: `docs/dashboard-direction.md`. Finish reviewer disposition: **ship** (supplied review outcome). Review evidence: `.impeccable/review/desktop.png` and `.impeccable/review/mobile.png`. These are documentation artifacts, not shipping raster assets; the interface uses CSS, SVG charts, and Lucide icons.
+Source of truth: `app/globals.css` and `components/monitor-app.tsx`; direction: `docs/dashboard-direction.md`. The November 7 visual refinement is recorded in `anti-slop/design-review-2026-11-07.md`, with screenshots in `.impeccable/review/antislop-desktop.png` and `.impeccable/review/antislop-mobile.png`. These are review artifacts, not shipping raster assets; the interface uses CSS, SVG charts, and Lucide icons.
 
 ## Colors
 
 Primary green identifies actions, active navigation, and links. Normal green, warning amber, danger red, and muted gray convey operational state through text as well as tint. Neutral ground, panel, text, divider, and sidebar primitives map directly to the matching CSS custom properties. `data-theme="dark"` replaces these eight primitives with their `dark-` counterparts and enables `color-scheme: dark`; severity surfaces also receive explicit dark overrides. Primary buttons retain their green fill and white text in both themes.
 
-**The Truthful State Rule.** Gray means unavailable, offline, or neutral—not healthy. Temperature is normal at ≤32°C, warning above 32°C through 35°C, and danger above 35°C. Sensor errors suppress current temperature and humidity values. Motion is a PIR signal, not attendance.
+**The Truthful State Rule.** Gray means unavailable, offline, or neutral. Temperature is normal at ≤32°C, warning above 32°C through 35°C, and danger above 35°C. Sensor errors suppress current temperature and humidity values. Motion is a PIR signal, not attendance.
 
 Temperature and humidity chart colors distinguish series, not severity. Blue also identifies the physical motion LED; it is not an additional alert level.
 
 ## Typography
 
-Geist Sans supplies interface text; Geist Mono is reserved for device identifiers. Use the frontmatter hierarchy for headings, metric values, controls, and badges. Paragraphs use line-height 1.6. Supporting copy is typically 10–12px; navigation is 12px; table text is 11px. Desktop threshold labels are 8px (7px at the intermediate breakpoint), returning to 9px on phones.
+Geist Sans supplies interface text; Geist Mono is reserved for device identifiers. Use the frontmatter hierarchy for headings, metric values, controls, and badges. Paragraphs use line-height 1.6. Supporting copy is typically 12–13px; navigation is 13px; table text is 12px. Threshold labels use 11px text in three wrapping columns at every breakpoint.
 
 Metric values, statistics, and table cells use tabular numerals. Units are quieter, with 17px regular-weight text beside the primary metric. Main headings become 23px on phones; metric figures become 33px at ≤900px and 37px at ≤700px. Avoid using the login's larger editorial heading scale for operational screens.
 
 ## Layout
 
-The fixed sidebar is 236px wide, manually collapsible to 76px. A 74px header sits above a centered content area capped at 1550px, with padding `32px 36px 20px`. Three equal sensor columns use a 19px gap; the overview uses `minmax(0, 1.8fr) minmax(280px, 1fr)` with a 22px gap. Analytics uses two equal columns. Panel headings use `21px 22px 17px`; metric cards use `21px 22px` and a 199px minimum height.
+The fixed sidebar is 236px wide, manually collapsible to 76px. A 74px header sits above a centered content area capped at 1550px, with padding `32px 36px 20px`. Three equal sensor columns use a 19px gap; the overview uses `minmax(0, 1.8fr) minmax(280px, 1fr)` with a 22px gap. Analytics uses two equal columns. Panel headings use `21px 22px 17px`; metric cards use `21px 22px` and a 225px minimum height.
 
-- **≥1500px:** content top padding 40px, metric minimum height 215px, chart height 260px.
+- **≥1500px:** content top padding 40px, metric minimum height 235px, chart height 260px.
 - **≤1150px:** sidebar 210px, content padding `26px 24px`, sensor gap 14px, overview ratio 1.4:1 with 260px minimum secondary column.
-- **≤900px:** icon rail 76px, sensor gap 12px, overview ratio 1.5:1 with 240px minimum secondary column and 16px gap; device details stack.
+- **≤900px:** icon rail 76px, sensor gap 12px, temperature spans both sensor columns with humidity and motion beneath; overview ratio 1.5:1 with 240px minimum secondary column and 16px gap; device details stack.
 - **≤700px:** sidebar hidden until opened as a 236px drawer over a backdrop; main offset removed, header 62px, content padding `24px 18px`. Sensor, overview, and statistics grids become one column. Metrics use 19px padding and no minimum height. Toolbars and pagination wrap. Tables scroll horizontally within their own container.
 
 Preserve DOM reading order: status, sensor readings, chart, device connectivity, activity, hardware. Desktop chart height is 225px; phone chart height is 230px.
@@ -170,8 +187,8 @@ Use gently rounded rectangular controls, compact badges, and bordered panels acc
 
 ## Components
 
-- **Buttons:** primary, outline, and ghost variants share an 8px icon gap and 37px minimum height. Outline/ghost hover uses the background primitive; primary hover uses its darker fill. Icon buttons are 36px wide with 8px padding. Disabled buttons use opacity 0.45 and `not-allowed` cursor.
-- **Status:** badges pair a dot with visible, capitalized text. The condition strip uses the same severity families, a `currentColor` border mixed to 13% opacity, and an explanatory sentence. Offline and sensor-error states retain explicit wording; unavailable values use an em dash.
+- **Buttons:** primary, outline, and ghost variants share an 8px icon gap and 42px minimum height, increasing to 44px on phones. Outline/ghost hover uses the background primitive; primary hover uses its darker fill. Icon buttons are 42px wide with 8px padding. Disabled buttons use opacity 0.45 and `not-allowed` cursor.
+- **Status:** badges pair a dot with visible, capitalized text. The condition strip uses the same severity families, a `currentColor` border mixed to 13% opacity, and an explanatory sentence. Offline and sensor-error states retain explicit wording; unavailable numeric values use an en dash.
 - **Panels:** semantic sections with h2 titles, optional explanatory text and action. Cards remain flat. Empty states use an icon, “No data yet,” and contextual guidance rather than invented readings.
 - **Fields:** native inputs/selects use one-pixel borders, panel backgrounds, and accent carets. Visible wrapping labels define form fields; compact period selects have accessible names. Settings communicate browser-local persistence and read-only thresholds.
 - **Navigation:** links carry icons, labels, `title`, and `aria-current="page"`; active links use accent-soft fill and accent text. Hover uses neutral ground. Account actions use native details/summary. Alert filters are buttons with `aria-pressed`, not navigation tabs.

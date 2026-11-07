@@ -3,8 +3,8 @@
   --background: #f7f8fa;
   --panel: #fff;
   --foreground: #202b32;
-  --muted: #6c7680;
-  --border: #e5e9ec;
+  --muted: #58666d;
+  --border: #dce2e2;
   --accent: #237a57;
   --accent-soft: #edf6f0;
   --sidebar: #fff;
@@ -98,7 +98,7 @@ h1 {
   font-weight: 650;
 }
 h2 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 620;
 }
 h3 {
@@ -141,6 +141,9 @@ small {
   font-weight: 650;
   letter-spacing: -0.5px;
 }
+.sidebar .brand {
+  min-height: 44px;
+}
 .brand-symbol {
   background: #26764e;
   color: white;
@@ -152,7 +155,7 @@ small {
 }
 .brand-text > span {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.1px;
   font-weight: 400;
   color: var(--muted);
@@ -186,13 +189,13 @@ small {
 .classroom-switch small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   margin-top: 4px;
 }
 .nav-caption {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 1.3px;
+  letter-spacing: 0.4px;
   color: var(--muted);
   margin: 0 13px 11px;
 }
@@ -202,13 +205,13 @@ small {
   gap: 5px;
 }
 .sidebar nav a {
-  height: 42px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 0 13px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   border-radius: 6px;
   white-space: nowrap;
 }
@@ -252,6 +255,7 @@ small {
   border-top: 1px solid var(--border);
   padding: 17px 12px 0;
   width: 100%;
+  min-height: 44px;
 }
 .main-shell {
   margin-left: var(--sidebar-width);
@@ -269,7 +273,7 @@ small {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .breadcrumb strong {
@@ -292,8 +296,8 @@ small {
 .account-menu summary {
   list-style: none;
   cursor: pointer;
-  width: 31px;
-  height: 31px;
+  width: 40px;
+  height: 40px;
   background: var(--accent-soft);
   color: var(--accent);
   border: 1px solid var(--border);
@@ -326,6 +330,12 @@ small {
   gap: 8px;
   text-align: left;
 }
+.account-menu > div a,
+.account-menu > div button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
 .main-content {
   max-width: 1550px;
   margin: auto;
@@ -336,19 +346,13 @@ small {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 27px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 .page-heading p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 8px;
-}
-.live-label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 10px;
-  color: var(--muted);
-  white-space: nowrap;
 }
 .status-dot {
   width: 6px;
@@ -367,9 +371,11 @@ small {
   gap: 6px;
   padding: 4px 8px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 100%;
+  line-height: 1.5;
   text-transform: capitalize;
   width: fit-content;
 }
@@ -420,16 +426,12 @@ small {
   margin-bottom: 23px;
 }
 .environment-strip strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 550;
 }
 .environment-strip p {
-  font-size: 10px;
-  opacity: 0.85;
+  font-size: 12px;
   margin-top: 4px;
-}
-.environment-strip > .badge {
-  margin-left: auto;
 }
 .environment-icon {
   width: 34px;
@@ -448,20 +450,21 @@ small {
   border: 1px solid var(--border);
   border-radius: 9px;
   padding: 21px 22px;
-  min-height: 199px;
+  min-height: 225px;
 }
 .metric-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 550;
 }
 .metric-label svg {
   color: #8c9894;
 }
 .metric-value {
-  font-size: 39px;
+  font-size: 44px;
   font-weight: 550;
   letter-spacing: -1.5px;
   line-height: 1.4;
@@ -477,11 +480,11 @@ small {
 }
 .metric-note {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .reading-updated {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 7px;
 }
 .threshold-bar {
@@ -502,9 +505,11 @@ small {
   background: #d89188;
 }
 .threshold-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--muted);
   margin-top: 7px;
 }
@@ -515,13 +520,13 @@ small {
   margin-top: 25px;
   padding-top: 15px;
   border-top: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   flex-wrap: wrap;
 }
 .metric-bottom span {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 11px;
 }
 .motion-value {
   font-size: 23px;
@@ -549,12 +554,12 @@ small {
   padding: 21px 22px 17px;
 }
 .panel-heading p {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 6px;
 }
 .panel-heading select {
-  font-size: 10px;
+  font-size: 12px;
   padding: 7px 25px 7px 10px;
 }
 .chart {
@@ -566,7 +571,9 @@ small {
   padding: 14px 22px;
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
   color: var(--muted);
 }
 .chart-footer span,
@@ -579,7 +586,7 @@ small {
 .chart-footer a,
 .text-link {
   color: var(--accent);
-  font-size: 10px;
+  font-size: 12px;
 }
 .legend-dot {
   width: 6px;
@@ -613,7 +620,7 @@ small {
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 17px;
 }
 .details dt {
@@ -622,7 +629,8 @@ small {
 .details dd {
   margin: 0;
   text-align: right;
-  font-size: 10px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .panel-link {
   display: flex;
@@ -631,7 +639,7 @@ small {
   gap: 8px;
   border-top: 1px solid var(--border);
   padding: 14px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .event-list {
@@ -657,16 +665,16 @@ small {
   place-items: center;
 }
 .event strong {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
 }
 .event p {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
 }
 .event-source {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   margin-left: auto;
 }
@@ -679,14 +687,14 @@ small {
   gap: 10px;
   padding: 18px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 13px;
 }
 .led-list strong {
   font-weight: 500;
 }
 .led-list > div > span:last-child {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .led {
@@ -713,13 +721,13 @@ small {
   gap: 9px;
   color: var(--muted);
   padding: 19px 22px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .app-footer {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   border-top: 1px solid var(--border);
   margin-top: 31px;
@@ -739,7 +747,7 @@ small {
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  min-height: 37px;
+  min-height: 42px;
 }
 .button-primary {
   background: #277c56;
@@ -760,7 +768,7 @@ small {
   background: var(--background);
 }
 .button-icon {
-  width: 36px;
+  width: 42px;
   padding: 8px;
 }
 input,
@@ -771,6 +779,7 @@ select {
   background: var(--panel);
   color: var(--foreground);
   max-width: 100%;
+  min-height: 44px;
 }
 select {
   font-size: 12px;
@@ -796,6 +805,10 @@ label {
   color: #b3413c;
   border-color: #e6bfb9;
 }
+[data-theme="dark"] .error-message {
+  color: #f3a9a2;
+  border-color: #74443e;
+}
 .empty {
   min-height: 220px;
   display: flex;
@@ -813,7 +826,7 @@ label {
   font-weight: 500;
 }
 .empty p {
-  font-size: 11px;
+  font-size: 12px;
   max-width: 280px;
 }
 .section-toolbar {
@@ -866,7 +879,7 @@ table {
   border-collapse: collapse;
   white-space: nowrap;
   text-align: left;
-  font-size: 11px;
+  font-size: 12px;
 }
 th {
   font-weight: 500;
@@ -886,12 +899,12 @@ td {
   padding: 18px 22px;
 }
 .pagination > span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-right: auto;
 }
 .pagination .button {
-  font-size: 10px;
+  font-size: 12px;
 }
 .feature-value {
   display: flex;
@@ -919,7 +932,8 @@ td {
 .tabs button {
   padding: 9px 12px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
+  min-height: 44px;
   text-transform: capitalize;
   color: var(--muted);
 }
@@ -1055,31 +1069,31 @@ td {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
 .login-story {
-  background: #edf3ee;
+  background: var(--accent-soft);
   padding: 48px 60px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #224c35;
+  color: var(--foreground);
 }
 .login-story h1 {
-  font-size: clamp(34px, 4vw, 58px);
-  line-height: 1.13;
-  letter-spacing: -2px;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.2;
+  letter-spacing: -1.2px;
   max-width: 490px;
 }
 .login-story p {
   margin-top: 25px;
   max-width: 390px;
-  color: #557061;
+  color: var(--muted);
   font-size: 15px;
 }
 .login-story > span {
   font-size: 11px;
-  color: #557061;
+  color: var(--muted);
 }
 .login-flow {
   display: flex;
@@ -1099,7 +1113,7 @@ td {
   background: var(--panel);
 }
 .login-inner {
-  max-width: 370px;
+  max-width: 400px;
   width: 100%;
 }
 .login-icon {
@@ -1111,7 +1125,7 @@ td {
   letter-spacing: -0.7px;
 }
 .login-inner > p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   margin-top: 10px;
 }
@@ -1125,7 +1139,7 @@ td {
   margin-top: 29px;
 }
 .login-inner .fine-print {
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
   margin-top: 17px;
 }
@@ -1137,7 +1151,7 @@ td {
     padding-top: 40px;
   }
   .metric {
-    min-height: 215px;
+    min-height: 235px;
   }
   .chart {
     height: 260px;
@@ -1167,10 +1181,10 @@ td {
     gap: 14px;
   }
   .metric-bottom {
-    font-size: 9px;
+    font-size: 12px;
   }
   .threshold-labels {
-    font-size: 7px;
+    font-size: 11px;
   }
   .collapsed {
     --sidebar-width: 76px;
@@ -1213,15 +1227,16 @@ td {
   }
   .metric-grid {
     gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric:first-child {
+    grid-column: 1 / -1;
   }
   .metric-value {
     font-size: 33px;
   }
   .motion-value {
     font-size: 20px;
-  }
-  .environment-strip > .badge {
-    display: none;
   }
   .app-footer {
     flex-wrap: wrap;
@@ -1234,9 +1249,6 @@ td {
   }
   .breadcrumb {
     gap: 9px;
-  }
-  .live-label {
-    font-size: 9px;
   }
 }
 @media (max-width: 700px) {
@@ -1270,9 +1282,17 @@ td {
     z-index: 25;
   }
   .mobile-menu {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 5px;
     margin-left: -5px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .mobile-menu::after {
+    content: "Menu";
+    font-size: 12px;
   }
   .app-header {
     height: 62px;
@@ -1280,8 +1300,7 @@ td {
     gap: 12px;
   }
   .breadcrumb {
-    margin-right: auto;
-    font-size: 10px;
+    display: none;
   }
   .breadcrumb > svg,
   .breadcrumb > strong {
@@ -1289,6 +1308,7 @@ td {
   }
   .header-right {
     gap: 12px;
+    margin-left: auto;
   }
   .header-divider {
     display: none;
@@ -1305,11 +1325,8 @@ td {
     font-size: 23px;
   }
   .page-heading p {
-    font-size: 11px;
+    font-size: 13px;
     max-width: 230px;
-  }
-  .live-label {
-    margin-top: 7px;
   }
   .metric-grid {
     grid-template-columns: 1fr;
@@ -1326,10 +1343,10 @@ td {
     margin-top: 18px;
   }
   .metric-bottom span {
-    font-size: 10px;
+    font-size: 11px;
   }
   .threshold-labels {
-    font-size: 9px;
+    font-size: 11px;
   }
   .overview-grid,
   .stats-grid {
@@ -1340,10 +1357,10 @@ td {
     gap: 7px;
   }
   .environment-strip strong {
-    font-size: 11px;
+    font-size: 13px;
   }
   .environment-strip p {
-    font-size: 9px;
+    font-size: 12px;
   }
   .environment-icon {
     width: 26px;
@@ -1428,7 +1445,7 @@ td {
     font-size: 23px;
   }
   .app-footer {
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1.8;
   }
   .settings-form {
@@ -1436,6 +1453,20 @@ td {
   }
   .collapse-button {
     display: none;
+  }
+  .button,
+  .account-menu summary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .text-link,
+  .chart-footer a {
+    min-height: 44px;
+  }
+  input,
+  select,
+  .panel-heading select {
+    font-size: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
