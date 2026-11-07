@@ -118,6 +118,8 @@ If stale or sensor-error data exists, current measurements show unavailable whil
 
 History loads at most 1,500 samples and 1,000 events per selected window. At one sample/minute, a 7-day selection can be capped to the newest 25 hours; the interface explicitly labels these as loaded samples. Statistics are sample averages rather than time-weighted averages. CSV exports the loaded samples. Motion counts count stored rising-edge transitions only. Events have device occurrence time and server arrival time; current data freshness uses only server timestamps.
 
+Last detected motion is independent of the selected time filter and remains visible when the device goes offline. Its lookup scans events newest first in pages of at most 100, stopping at the newest stored detection. This supports older firmware record keys that are not chronological; only retained events can be found. Device status becomes Offline when readings exceed the configured freshness timeout (30 seconds by default), checked at the selected display refresh interval. If the browser loses its Firebase connection, status is shown as unavailable rather than claiming the ESP32 is online.
+
 ## 5. Vercel deployment
 
 1. Push the repository to your Git provider, excluding `.env.local` and firmware `config.h`.

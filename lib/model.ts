@@ -41,6 +41,15 @@ export function isReadingFresh(
     timestamp <= now + 5000
   );
 }
+export function deviceConnectionStatus(
+  timestamp: number | undefined,
+  now: number,
+  staleSeconds: number,
+  connected: boolean,
+): "online" | "offline" | "unknown" {
+  if (!connected) return "unknown";
+  return isReadingFresh(timestamp, now, staleSeconds) ? "online" : "offline";
+}
 export const eventLabels: Record<SensorEvent["type"], string> = {
   motion_started: "Motion detected",
   motion_stopped: "Motion stopped",

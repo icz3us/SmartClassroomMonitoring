@@ -353,7 +353,7 @@ function Overview() {
   const r = m.latest;
   const available = m.fresh && !r?.sensorError;
   const status = !m.fresh
-    ? "Device offline"
+    ? m.connectionLabel
     : r?.sensorError
       ? "Sensor error"
       : r?.temperatureStatus || "Unavailable";
@@ -483,7 +483,7 @@ function Overview() {
             <div>
               <strong>ESP32 DevKit V1</strong>
               <Badge tone={m.fresh ? "normal" : "muted"}>
-                {m.fresh ? "Online" : "Offline"}
+                {m.connectionLabel}
               </Badge>
             </div>
           </div>
@@ -800,9 +800,7 @@ function Device() {
         title="Smart Classroom Monitor"
         detail={deviceId}
         action={
-          <Badge tone={m.fresh ? "normal" : "muted"}>
-            {m.fresh ? "Online" : "Offline"}
-          </Badge>
+          <Badge tone={m.fresh ? "normal" : "muted"}>{m.connectionLabel}</Badge>
         }
       >
         <dl className="device-details">
@@ -1010,7 +1008,7 @@ export function MonitorApp({ page }: { page: string }) {
           <div className="sidebar-device">
             <span className={`status-dot ${m.fresh ? "online-dot" : ""}`} />
             <span className="nav-label">
-              {m.fresh ? "Device connected" : "Device offline"}
+              Device {m.connectionLabel.toLowerCase()}
               <small>{deviceId}</small>
             </span>
           </div>
@@ -1040,7 +1038,7 @@ export function MonitorApp({ page }: { page: string }) {
           </div>
           <div className="header-right">
             <Badge tone={m.fresh ? "normal" : "muted"}>
-              {m.fresh ? "Device online" : "Device offline"}
+              Device {m.connectionLabel.toLowerCase()}
             </Badge>
             <span className="header-divider" />
             <details className="account-menu">
@@ -1078,7 +1076,9 @@ export function MonitorApp({ page }: { page: string }) {
             </div>
             <span className="live-label">
               <span className={`status-dot ${m.fresh ? "online-dot" : ""}`} />
-              {m.connected ? "Live updates" : "Connection unavailable"}
+              {m.fresh
+                ? "Live updates"
+                : `Device ${m.connectionLabel.toLowerCase()}`}
             </span>
           </div>
           {m.error && (

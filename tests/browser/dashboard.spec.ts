@@ -5,6 +5,10 @@ test("every dashboard route requires authentication and has no preview bypass", 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (/instant-shell-url-data|encountered URL data/.test(message.text()))
+      errors.push(message.text());
+  });
   for (const route of [
     "/",
     "/analytics",

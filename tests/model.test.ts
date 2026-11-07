@@ -4,6 +4,7 @@ import {
   statusFor,
   summarize,
   isReadingFresh,
+  deviceConnectionStatus,
   type Reading,
 } from "../lib/model";
 test("firmware threshold boundaries are exact", () => {
@@ -26,6 +27,14 @@ test("power loss expires freshness and missing or implausible future timestamps 
   assert.equal(isReadingFresh(now + 6000, now, 30), false);
   assert.equal(isReadingFresh(now - 45000, now, 60), true);
 });
+test("device status expires without telemetry and browser loss cannot confirm online status", () => {
+  const now = 1700000000000;
+  assert.equal(deviceConnectionStatus(now, now, 30, true), "online");
+  assert.equal(deviceConnectionStatus(now, now + 30001, 30, true), "offline");
+  assert.equal(deviceConnectionStatus(now, now, 30, false), "unknown");
+  assert.equal(deviceConnectionStatus(undefined, now, 30, true), "offline");
+});
+
 test("statistics exclude missing and failed samples and preserve zero values", () => {
   const rows = [
     { temperature: 0, sensorError: false },

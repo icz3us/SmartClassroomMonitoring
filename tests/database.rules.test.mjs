@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { subscribeLastMotion } from "../lib/motion.mts";
 import { after, before, beforeEach, test } from "node:test";
 import {
   initializeTestEnvironment,
@@ -233,6 +234,145 @@ test("temperature alerts must match firmware threshold boundaries", async () => 
       );
       await (type === expected ? assertSucceeds(write) : assertFails(write));
     }
+  }
+});
+
+test("warning event is stored and delivered to the Alert History query", async () => {
+  const device = env.authenticatedContext("esp32").database();
+  const viewer = env.authenticatedContext("teacher").database();
+  const cutoff = Date.now() - 60000;
+  let unsubscribe = () => {};
+  let timeout;
+  try {
+    const received = new Promise((resolve, reject) => {
+      timeout = setTimeout(
+        () => reject(new Error("Warning event was not delivered")),
+        15000,
+      );
+      unsubscribe = onValue(
+        query(
+          ref(viewer, "events/classroom-01"),
+          orderByChild("timestamp"),
+          startAt(cutoff),
+          limitToLast(1000),
+        ),
+        (snapshot) => {
+          if (snapshot.hasChild("warning-transition"))
+            resolve(snapshot.child("warning-transition").val());
+        },
+        reject,
+      );
+    });
+    await set(ref(device, "events/classroom-01/warning-transition"), {
+      type: "warning",
+      temperature: 33,
+      timestamp: Date.now(),
+      receivedAt: serverTimestamp(),
+    });
+    const event = await received;
+    assert.equal(event.type, "warning");
+    assert.equal(event.temperature, 33);
+    assert.equal(typeof event.receivedAt, "number");
+    await assertFails(
+      set(ref(device, "events/classroom-01/legacy-warning"), {
+        type: "temperature_status",
+        status: "warning",
+        temperature: 33,
+        occurredAt: Date.now(),
+        timestamp: serverTimestamp(),
+      }),
+    );
+  } finally {
+    clearTimeout(timeout);
+    unsubscribe();
+  }
+});
+
+test("last motion uses timestamps across pages and device restarts, regardless of the selected period", async () => {
+  const now = Date.now();
+  const oldDetection = now - 10 * 86400000;
+  const lastDetection = now - 2 * 86400000;
+  const events = {
+    "zzz-older-boot": { type: "motion_started", timestamp: oldDetection },
+    "aaa-newer-boot": { type: "motion_started", timestamp: lastDetection },
+  };
+  for (let i = 0; i < 1001; i++)
+    events[`recent-${i}`] = { type: "normal", timestamp: now - 10000 };
+  await env.withSecurityRulesDisabled((context) =>
+    set(ref(context.database(), "events/classroom-01"), events),
+  );
+  let stop = () => {};
+  let timeout;
+  const timestamps = [];
+  try {
+    let first;
+    let next;
+    const initial = new Promise((resolve) => {
+      first = resolve;
+    });
+    const updated = new Promise((resolve) => {
+      next = resolve;
+    });
+    const failed = new Promise((_, reject) => {
+      timeout = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `Last motion lookup timed out; received ${JSON.stringify(timestamps)}`,
+            ),
+          ),
+        15000,
+      );
+      stop = subscribeLastMotion(
+        env.authenticatedContext("teacher").database(),
+        "classroom-01",
+        (timestamp) => {
+          timestamps.push(timestamp);
+          if (timestamp === lastDetection) first(timestamp);
+          if (timestamp === now) next(timestamp);
+        },
+        reject,
+      );
+    });
+    assert.equal(await Promise.race([initial, failed]), lastDetection);
+    await set(
+      ref(
+        env.authenticatedContext("esp32").database(),
+        "events/classroom-01/000-newest-boot",
+      ),
+      {
+        type: "motion_started",
+        timestamp: now,
+        receivedAt: serverTimestamp(),
+      },
+    );
+    assert.equal(await Promise.race([updated, failed]), now);
+  } finally {
+    clearTimeout(timeout);
+    stop();
+  }
+});
+
+test("last motion returns empty only when no detection is recorded", async () => {
+  let stop = () => {};
+  let timeout;
+  try {
+    const result = await new Promise((resolve, reject) => {
+      timeout = setTimeout(
+        () => reject(new Error("Empty motion lookup timed out")),
+        15000,
+      );
+      stop = subscribeLastMotion(
+        env.authenticatedContext("teacher").database(),
+        "classroom-01",
+        resolve,
+        reject,
+      );
+    });
+    assert.equal(result, null);
+  } finally {
+    clearTimeout(timeout);
+    stop();
   }
 });
 

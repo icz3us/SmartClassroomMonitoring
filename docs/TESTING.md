@@ -26,7 +26,11 @@ npx firebase-tools emulators:exec --only database --project demo-classroom "npm 
 
 Tests assert exact 32/35°C boundaries, missing-data statistics, denied anonymous/unauthorized access, viewer read-only access, device isolation, range/type validation, server timestamps, bounded queries, failed sensor heartbeats, and idempotent event retries.
 
+Motion regression tests use nonchronological keys from different device boots, detections older than the selected time window, and more than 1,000 subsequent non-motion events. They exercise the actual last-motion subscription, including live updates and the no-detections case. Device-status tests cover freshness expiry after power loss and unavailable status when the browser loses its database connection.
+
 Temperature event tests also reject alert labels that contradict their recorded temperature, including exactly 32°C and 35°C. Access-revocation tests verify that Firebase cancels an existing live telemetry listener. The dashboard clears affected data when a listener is denied and resets readings when the signed-in account changes.
+
+The warning integration test writes a device event and verifies delivery through the same bounded timestamp query used by Alert History. Events use `type: "warning"` (or `normal` / `danger`), the occurrence time in milliseconds as `timestamp`, and a Firebase server timestamp as `receivedAt`. The older `type: "temperature_status", status: "warning"` format is rejected by the rules and is not supported by the dashboard. Firmware must also record the initial valid temperature state so booting while already above 32°C produces an alert.
 
 ## Physical-device and cloud acceptance matrix
 

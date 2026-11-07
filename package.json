@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/model.test.ts",
-    "test:rules": "node --test tests/database.rules.test.mjs",
+    "test:rules": "tsx --test tests/database.rules.test.mjs",
     "test:browser": "playwright test",
     "format": "prettier --write app components lib scripts tests"
   },

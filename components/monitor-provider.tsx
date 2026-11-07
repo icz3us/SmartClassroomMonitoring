@@ -11,7 +11,6 @@ import {
 } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import {
-  endAt,
   limitToLast,
   onValue,
   orderByChild,
@@ -20,9 +19,10 @@ import {
   startAt,
 } from "firebase/database";
 import { firebaseClient, firebaseConfigured } from "@/lib/firebase";
+import { subscribeLastMotion } from "@/lib/motion.mts";
 import {
   deviceId,
-  isReadingFresh,
+  deviceConnectionStatus,
   type Reading,
   type SensorEvent,
 } from "@/lib/model";
@@ -121,7 +121,6 @@ function useMonitorState() {
     const { db } = firebaseClient();
     setHistory([]);
     setEvents([]);
-    setLastMotion(null);
     const cutoff = Date.now() + offset - period * 60000;
     const stopHistory = onValue(
       query(
@@ -161,31 +160,23 @@ function useMonitorState() {
         setError(e.message);
       },
     );
-    const stopMotion = onValue(
-      query(
-        ref(db, `events/${deviceId}`),
-        orderByChild("type"),
-        startAt("motion_started"),
-        endAt("motion_started"),
-        limitToLast(1),
-      ),
-      (s) => {
-        setLastMotion(null);
-        s.forEach((child) => {
-          setLastMotion(child.val().timestamp);
-        });
-      },
+    return () => {
+      stopHistory();
+      stopEvents();
+    };
+  }, [user, period, offset]);
+  useEffect(() => {
+    if (!user) return;
+    return subscribeLastMotion(
+      firebaseClient().db,
+      deviceId,
+      setLastMotion,
       (e) => {
         setLastMotion(null);
         setError(e.message);
       },
     );
-    return () => {
-      stopHistory();
-      stopEvents();
-      stopMotion();
-    };
-  }, [user, period, offset]);
+  }, [user]);
   const savePreferences = (value: Preferences) => {
     setPreferences(value);
     localStorage.setItem("classroom-preferences", JSON.stringify(value));
@@ -197,11 +188,19 @@ function useMonitorState() {
     setLastMotion(null);
     if (user) await signOut(firebaseClient().auth);
   };
-  const fresh = isReadingFresh(
+  const connectionStatus = deviceConnectionStatus(
     latest?.timestamp,
     now,
     preferences.staleSeconds,
+    connected,
   );
+  const fresh = connectionStatus === "online";
+  const connectionLabel =
+    connectionStatus === "unknown"
+      ? "Status unavailable"
+      : fresh
+        ? "Online"
+        : "Offline";
   const formatTime = (timestamp?: number | null) =>
     timestamp
       ? new Date(timestamp).toLocaleString(undefined, {
@@ -227,6 +226,7 @@ function useMonitorState() {
     error,
     loading,
     connected,
+    connectionLabel,
     now,
     fresh,
     lastMotion,
