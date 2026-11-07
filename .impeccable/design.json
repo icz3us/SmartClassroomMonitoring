@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T00:00:00Z",
+  "title": "Design System: Classroom Monitor",
+  "extensions": {
+    "sources": ["app/globals.css", "components/monitor-app.tsx", "docs/dashboard-direction.md"],
+    "review": {
+      "disposition": "ship",
+      "basis": "Supplied finish reviewer outcome",
+      "screenshots": [".impeccable/review/desktop.png", ".impeccable/review/mobile.png"],
+      "shippingRasterAssets": []
+    },
+    "theme": {
+      "selector": "[data-theme=\"dark\"]",
+      "mapping": "Dark-prefixed frontmatter colors replace matching light primitives; severity foregrounds and surfaces have explicit overrides. Primary button colors remain fixed.",
+      "colorScheme": "dark"
+    },
+    "shadows": [
+      {"name": "account-popover", "value": "0 8px 25px #00000010", "purpose": "Account menu above the workspace."},
+      {"name": "selected-filter", "value": "0 1px 3px #00000009", "purpose": "Selected alert filter."}
+    ],
+    "motion": [
+      {"name": "control-transition", "value": "background 0.15s, color 0.15s", "purpose": "Button and link state changes."},
+      {"name": "reduced-motion", "value": "transition: none !important; animation: none !important; scroll-behavior: auto !important", "purpose": "Applied universally under prefers-reduced-motion: reduce; chart animation is always disabled."}
+    ],
+    "focus": {"outline": "2px solid var(--accent)", "outlineOffset": "4px"},
+    "breakpoints": [
+      {"name": "wide-min", "value": "1500px"},
+      {"name": "compact-max", "value": "1150px"},
+      {"name": "rail-max", "value": "900px"},
+      {"name": "phone-max", "value": "700px"}
+    ],
+    "typographyMeta": {
+      "metric": {"displayName": "Sensor reading", "purpose": "Tabular numerals; 33px at rail breakpoint, 37px on phones."},
+      "mono": {"displayName": "Device identifier", "purpose": "Technical IDs only."}
+    }
+  },
+  "components": [
+    {
+      "name": "Primary button", "kind": "button", "refersTo": "button-primary",
+      "description": "Solid green action; fixed colors in both themes.",
+      "html": "<button class=\"ds-primary\">Save preferences</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:6px;font:500 12px var(--font-geist-sans),Arial,sans-serif;min-height:37px;background:#277c56;color:#fff;border:1px solid #277c56;cursor:pointer;transition:background .15s,color .15s}.ds-primary:hover{background:#1d6545}.ds-primary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.ds-primary:disabled{opacity:.45;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Outline button", "kind": "button", "refersTo": "button-outline",
+      "description": "Secondary actions and pagination.",
+      "html": "<button class=\"ds-outline\">Export CSV</button>",
+      "css": ".ds-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:6px;font:500 12px var(--font-geist-sans),Arial,sans-serif;min-height:37px;background:var(--panel);color:var(--foreground);border:1px solid var(--border);cursor:pointer;transition:background .15s,color .15s}.ds-outline:hover{background:var(--background)}.ds-outline:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.ds-outline:disabled{opacity:.45;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-outline{transition:none}}"
+    },
+    {
+      "name": "Ghost button", "kind": "button", "refersTo": "button-ghost",
+      "description": "Low-emphasis button treatment defined by the shared stylesheet.",
+      "html": "<button class=\"ds-ghost\">Account settings</button>",
+      "css": ".ds-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:6px;font:500 12px var(--font-geist-sans),Arial,sans-serif;min-height:37px;background:none;color:var(--foreground);border:0;cursor:pointer;transition:background .15s,color .15s}.ds-ghost:hover{background:var(--background)}.ds-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.ds-ghost:disabled{opacity:.45;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-ghost{transition:none}}"
+    },
+    {
+      "name": "Labeled field", "kind": "input", "refersTo": "input",
+      "description": "Native field with persistent visible label.",
+      "html": "<label class=\"ds-label\">Classroom display name<input class=\"ds-input\" value=\"Classroom 01\" maxlength=\"50\" required></label>",
+      "css": ".ds-label{display:flex;flex-direction:column;gap:8px;font:500 12px var(--font-geist-sans),Arial,sans-serif;color:var(--foreground)}.ds-input{font:inherit;border:1px solid var(--border);border-radius:6px;padding:10px 12px;background:var(--panel);color:var(--foreground);max-width:100%;caret-color:var(--accent)}.ds-input:focus-visible{outline:2px solid var(--accent);outline-offset:4px}"
+    },
+    {
+      "name": "Severity badges", "kind": "chip", "refersTo": "badge-normal",
+      "description": "Color-plus-text state samples; explicit dark swatches match the source overrides.",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-badge ds-normal\"><i></i>Normal</span><span class=\"ds-badge ds-warning\"><i></i>Warning</span><span class=\"ds-badge ds-danger\"><i></i>Danger</span><span class=\"ds-badge ds-muted\"><i></i>Offline</span></div><div class=\"ds-badges ds-dark\"><span class=\"ds-badge ds-normal\"><i></i>Normal</span><span class=\"ds-badge ds-warning\"><i></i>Warning</span><span class=\"ds-badge ds-danger\"><i></i>Danger</span></div>",
+      "css": ".ds-badges{display:flex;gap:8px;flex-wrap:wrap;padding:8px}.ds-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:5px;font:500 10px var(--font-geist-sans),Arial,sans-serif;white-space:nowrap;text-transform:capitalize;width:fit-content}.ds-badge i{width:6px;height:6px;display:inline-block;border-radius:50%;background:#90999f;flex-shrink:0}.ds-normal{color:#26764e;background:#edf7f0}.ds-warning{color:#936214;background:#fff5de}.ds-danger{color:#b33d3d;background:#fff0ee}.ds-muted{color:var(--muted);background:var(--background)}.ds-normal i{background:#34895d}.ds-warning i{background:#bb8b2f}.ds-danger i{background:#c65050}.ds-dark{background:#121917}.ds-dark .ds-normal{color:#91d2a7;background:#213e2b}.ds-dark .ds-warning{color:#f0cc82;background:#43351c}.ds-dark .ds-danger{color:#f3a9a2;background:#442723}"
+    },
+    {
+      "name": "Active navigation", "kind": "nav", "refersTo": "navigation-active",
+      "description": "Current-page navigation with compact inline SVG icon.",
+      "html": "<nav aria-label=\"Main navigation\"><a class=\"ds-nav\" href=\"/\" aria-current=\"page\" title=\"Overview\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/></svg>Overview</a></nav>",
+      "css": ".ds-nav{height:42px;display:flex;align-items:center;gap:11px;padding:0 13px;color:var(--muted);font:400 12px var(--font-geist-sans),Arial,sans-serif;border-radius:6px;white-space:nowrap;text-decoration:none;transition:background .15s,color .15s}.ds-nav:hover{background:var(--background)}.ds-nav[aria-current=page]{background:var(--accent-soft);color:var(--accent);font-weight:600}.ds-nav:focus-visible{outline:2px solid var(--accent);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-nav{transition:none}}"
+    },
+    {
+      "name": "Section panel", "kind": "card", "refersTo": "panel",
+      "description": "Bordered, flat semantic section with title and contextual copy.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-panel-heading\"><div><h2>Device connection</h2><p>Reported by your ESP32 firmware</p></div></div></section>",
+      "css": ".ds-panel{background:var(--panel);color:var(--foreground);border:1px solid var(--border);border-radius:9px;min-width:0;overflow:hidden;font-family:var(--font-geist-sans),Arial,sans-serif}.ds-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:21px 22px 17px}.ds-panel h2{margin:0;font-size:14px;font-weight:620}.ds-panel p{margin:6px 0 0;font-size:10px;color:var(--muted);line-height:1.6}@media(max-width:900px){.ds-panel-heading{padding:18px 16px;flex-wrap:wrap}}@media(max-width:700px){.ds-panel-heading{padding:20px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Quiet classroom operations",
+    "overview": "The user-pinned neutral SaaS Operate dashboard prioritizes current readings, freshness, and explicit status. Compact typography, bordered surfaces, and restrained green accents create a practical workspace. The implemented light foundation has a dark theme with the same hierarchy and green/amber/red/gray state meanings.",
+    "keyCharacteristics": ["Compact, calm, data-first hierarchy.", "Color-plus-text states and honest unavailable readings.", "Responsive navigation and single-column phone reading order."],
+    "rules": [
+      {"name": "The Truthful State Rule", "body": "Gray means unavailable, offline, or neutral—not healthy. Temperature is normal at ≤32°C, warning above 32°C through 35°C, and danger above 35°C. Sensor errors suppress current temperature and humidity values. Motion is a PIR signal, not attendance.", "section": "colors"}
+    ],
+    "dos": ["Do preserve color-plus-text status, units, and freshness context.", "Do use theme primitives for surfaces, text, borders, and navigation.", "Do retain keyboard focus, semantic controls, and phone reading order.", "Do label demonstration data and distinguish unavailable readings from zero."],
+    "donts": ["Don't turn PIR motion into attendance or imply humidity alert thresholds.", "Don't add decorative raster assets, heavy card shadows, or gradients to this operational interface.", "Don't promote review screenshots into shipping assets.", "Don't use color alone to communicate severity or connection state."]
+  }
+}

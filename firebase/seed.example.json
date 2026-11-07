@@ -1,0 +1,7 @@
+{
+  "access": {
+    "viewers": { "REPLACE_WITH_DASHBOARD_USER_UID": { "classroom-01": true } },
+    "devices": { "REPLACE_WITH_DEVICE_USER_UID": "classroom-01" }
+  },
+  "settings": { "classroom-01": { "warningTemperature": 32, "dangerTemperature": 35 } }
+}

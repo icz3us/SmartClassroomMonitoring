@@ -1,0 +1,77 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "access": { ".read": false, ".write": false },
+    "devices": {
+      "$device": {
+        ".read": "auth != null && root.child('access/viewers').child(auth.uid).child($device).val() === true",
+        ".write": "auth != null && root.child('access/devices').child(auth.uid).val() === $device && newData.exists()",
+        ".validate": "newData.hasChildren(['name', 'lastSeen'])",
+        "name": { ".validate": "newData.isString() && newData.val() === 'Smart Classroom Monitor'" },
+        "lastSeen": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "$other": { ".validate": false }
+      }
+    },
+    "latestReadings": {
+      "$device": {
+        ".read": "auth != null && root.child('access/viewers').child(auth.uid).child($device).val() === true",
+        ".write": "auth != null && root.child('access/devices').child(auth.uid).val() === $device && newData.exists()",
+        ".validate": "newData.hasChildren(['motion','sensorError','temperatureStatus','greenLED','redLED','redLEDBlinking','motionLED','timestamp']) && (newData.child('sensorError').val() === true || newData.hasChildren(['temperature','humidity'])) && (newData.child('sensorError').val() === true || (newData.child('temperature').val() <= 32 && newData.child('temperatureStatus').val() === 'normal') || (newData.child('temperature').val() > 32 && newData.child('temperature').val() <= 35 && newData.child('temperatureStatus').val() === 'warning') || (newData.child('temperature').val() > 35 && newData.child('temperatureStatus').val() === 'danger'))",
+        "temperature": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },
+        "humidity": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+        "motion": { ".validate": "newData.isBoolean()" },
+        "sensorError": { ".validate": "newData.isBoolean()" },
+        "temperatureStatus": { ".validate": "newData.val() === 'normal' || newData.val() === 'warning' || newData.val() === 'danger'" },
+        "greenLED": { ".validate": "newData.isBoolean()" },
+        "redLED": { ".validate": "newData.isBoolean()" },
+        "redLEDBlinking": { ".validate": "newData.isBoolean()" },
+        "motionLED": { ".validate": "newData.isBoolean()" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "$other": { ".validate": false }
+      }
+    },
+    "readings": {
+      "$device": {
+        ".read": "auth != null && root.child('access/viewers').child(auth.uid).child($device).val() === true && query.orderByChild === 'timestamp' && query.startAt != null && query.limitToLast != null && query.limitToLast <= 1500",
+        ".indexOn": ["timestamp"],
+        "$reading": {
+          ".write": "auth != null && root.child('access/devices').child(auth.uid).val() === $device && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['temperature','humidity','motion','sensorError','temperatureStatus','greenLED','redLED','redLEDBlinking','motionLED','timestamp']) && ((newData.child('temperature').val() <= 32 && newData.child('temperatureStatus').val() === 'normal') || (newData.child('temperature').val() > 32 && newData.child('temperature').val() <= 35 && newData.child('temperatureStatus').val() === 'warning') || (newData.child('temperature').val() > 35 && newData.child('temperatureStatus').val() === 'danger'))",
+          "temperature": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },
+          "humidity": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "motion": { ".validate": "newData.isBoolean()" },
+          "sensorError": { ".validate": "newData.val() === false" },
+          "temperatureStatus": { ".validate": "newData.val() === 'normal' || newData.val() === 'warning' || newData.val() === 'danger'" },
+          "greenLED": { ".validate": "newData.isBoolean()" },
+          "redLED": { ".validate": "newData.isBoolean()" },
+          "redLEDBlinking": { ".validate": "newData.isBoolean()" },
+          "motionLED": { ".validate": "newData.isBoolean()" },
+          "timestamp": { ".validate": "newData.isNumber() && newData.val() === now" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "events": {
+      "$device": {
+        ".read": "auth != null && root.child('access/viewers').child(auth.uid).child($device).val() === true && ((query.orderByChild === 'timestamp' && query.startAt != null && query.limitToLast != null && query.limitToLast <= 1000) || (query.orderByChild === 'type' && query.startAt === 'motion_started' && query.endAt === 'motion_started' && query.limitToLast === 1))",
+        ".indexOn": ["timestamp", "type"],
+        "$event": {
+          ".write": "auth != null && root.child('access/devices').child(auth.uid).val() === $device && newData.exists() && (!data.exists() || (data.child('type').val() === newData.child('type').val() && data.child('timestamp').val() === newData.child('timestamp').val() && data.child('temperature').val() === newData.child('temperature').val()))",
+          ".validate": "newData.hasChildren(['type','timestamp','receivedAt']) && (!(newData.child('type').val() === 'normal' || newData.child('type').val() === 'warning' || newData.child('type').val() === 'danger') || (newData.hasChild('temperature') && ((newData.child('type').val() === 'normal' && newData.child('temperature').val() <= 32) || (newData.child('type').val() === 'warning' && newData.child('temperature').val() > 32 && newData.child('temperature').val() <= 35) || (newData.child('type').val() === 'danger' && newData.child('temperature').val() > 35))))",
+          "type": { ".validate": "newData.val() === 'motion_started' || newData.val() === 'motion_stopped' || newData.val() === 'normal' || newData.val() === 'warning' || newData.val() === 'danger' || newData.val() === 'sensor_error' || newData.val() === 'sensor_recovered' || newData.val() === 'connection_restored'" },
+          "timestamp": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 5000 && newData.val() >= now - 86400000" },
+          "receivedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+          "temperature": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "settings": {
+      "$device": {
+        ".read": "auth != null && root.child('access/viewers').child(auth.uid).child($device).val() === true",
+        ".write": false
+      }
+    }
+  }
+}
