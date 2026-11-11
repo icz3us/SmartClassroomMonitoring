@@ -25,6 +25,9 @@ The loop does not perform network requests. A FreeRTOS task on core 0 performs H
 
 ## Data and reliability
 
+- `occupancy.h` implements the occupancy estimate locally: motion keeps `likely_occupied` active, ten minutes without motion changes it to `no_recent_activity`, and restart begins with `unknown`. HIGH PIR readings continuously renew the timer. The timer works offline and across `millis()` rollover; it is not a person counter or a vacancy detector.
+- Keep `occupancy.h` beside the sketch when opening it in Arduino IDE. Readings carry `occupancyStatus` and `occupancyTimeoutSeconds: 600`; occupancy transitions are stored separately from motion edges, including an unknown baseline on every reboot. The website overrides current occupancy to unknown for stale/unreachable telemetry while retaining historical estimates.
+
 - Latest readings and device heartbeat use Firebase server timestamps; uploads are atomic root PATCHes constrained by per-path rules.
 - Historical readings are sampled every 60 seconds by default (1,440/day). This lowers storage, but is not automatic retention. Use the provided retention command regularly.
 - Motion events are generated only on edges, and temperature events only on transitions (plus the first valid baseline). A 128-entry in-memory queue holds events while disconnected; overflow and events older than 24 hours are explicitly dropped with Serial messages. Power loss loses this queue. This is bounded academic telemetry, not a durable industrial event recorder.
@@ -41,3 +44,5 @@ The sketch uses a unique least-privilege device identity, never a service-accoun
 ## Hardware acceptance tests
 
 Before replacing your working sketch, record its behavior. Then verify normal 32°C, warning just above 32°C and at 35°C, danger above 35°C, and PIR changes in all three conditions. Disconnect Wi-Fi and Firebase access separately, and confirm local LEDs still operate. Restore access and confirm queued transitions, token renewal after an hour, power-loss freshness expiry, DHT disconnect/error recovery, and access from a browser on a different network. See `docs/TESTING.md` for the acceptance matrix. Hardware behavior cannot be verified without the physical ESP32.
+
+Also verify an initial unknown occupancy state, motion setting likely occupied, repeated/continuous motion renewing the timeout, a LOW PIR signal retaining the estimate, no recent activity after the full ten-minute quiet period, and restart clearing the estimate to unknown. The updated Downloads sketch sends sensor-error heartbeats without invalid DHT values, so occupancy can still be reported when the environmental sensor fails. Local LED behavior remains unchanged.

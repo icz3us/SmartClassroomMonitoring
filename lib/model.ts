@@ -1,4 +1,11 @@
 export type TemperatureStatus = "normal" | "warning" | "danger";
+export type OccupancyStatus =
+  "likely_occupied" | "no_recent_activity" | "unknown";
+export const occupancyLabels: Record<OccupancyStatus, string> = {
+  likely_occupied: "Likely occupied",
+  no_recent_activity: "No recent activity",
+  unknown: "Occupancy unknown",
+};
 export interface Reading {
   temperature?: number;
   humidity?: number;
@@ -11,6 +18,8 @@ export interface Reading {
   motionLED: boolean;
   timestamp: number;
   sampledAt?: number;
+  occupancyStatus?: OccupancyStatus;
+  occupancyTimeoutSeconds?: number;
 }
 export interface SensorEvent {
   id: string;
@@ -22,11 +31,24 @@ export interface SensorEvent {
     | "danger"
     | "sensor_error"
     | "sensor_recovered"
+    | "occupancy_likely_occupied"
+    | "occupancy_no_recent_activity"
+    | "occupancy_unknown"
     | "connection_restored";
   timestamp: number;
   temperature?: number;
 }
 export const deviceId = process.env.NEXT_PUBLIC_DEVICE_ID || "classroom-01";
+export function occupancyFor(
+  reading: Reading | null,
+  fresh: boolean,
+): OccupancyStatus {
+  if (!fresh) return "unknown";
+  return reading?.occupancyStatus === "likely_occupied" ||
+    reading?.occupancyStatus === "no_recent_activity"
+    ? reading.occupancyStatus
+    : "unknown";
+}
 export function motionFor(reading: Reading | null, events: SensorEvent[]) {
   let motion = reading?.motion ?? false;
   let timestamp = reading?.sampledAt ?? reading?.timestamp ?? 0;
@@ -74,6 +96,9 @@ export const eventLabels: Record<SensorEvent["type"], string> = {
   danger: "Temperature entered danger state",
   sensor_error: "DHT11 reading failed",
   sensor_recovered: "Sensor readings restored",
+  occupancy_likely_occupied: "Classroom likely occupied",
+  occupancy_no_recent_activity: "No recent classroom activity",
+  occupancy_unknown: "Occupancy estimate restarted",
   connection_restored: "Device connection restored",
 };
 export function summarize(

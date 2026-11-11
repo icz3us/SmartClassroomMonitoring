@@ -25,6 +25,8 @@ import {
   deviceConnectionStatus,
   motionFor,
   isReadingFresh,
+  occupancyFor,
+  occupancyLabels,
   type Reading,
   type SensorEvent,
 } from "@/lib/model";
@@ -223,6 +225,8 @@ function useMonitorState() {
     latest,
     motion: motionFor(latest, events),
     recentMotion: fresh && isReadingFresh(lastMotion ?? undefined, now, 10),
+    occupancy: occupancyFor(latest, fresh),
+    occupancyLabel: occupancyLabels[occupancyFor(latest, fresh)],
     history: history.filter((r) => r.timestamp >= cutoff),
     events: events.filter((e) => e.timestamp >= cutoff),
     period,

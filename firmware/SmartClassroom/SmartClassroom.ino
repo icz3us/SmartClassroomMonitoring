@@ -6,6 +6,7 @@
 #include <time.h>
 #include <esp_system.h>
 #include "config.h"
+#include "occupancy.h"
 
 #define DHTPIN 4
 #define DHTTYPE DHT11
@@ -17,11 +18,12 @@ const float WARN_TEMP = 32.0;
 const float DANGER_TEMP = 35.0;
 DHT dht(DHTPIN, DHTTYPE);
 
-struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; uint64_t sampledAt; };
-struct Event { char type[24]; float temperature; bool hasTemperature; uint64_t timestamp; uint32_t uptime; uint32_t sequence; };
+struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; uint64_t sampledAt; uint8_t occupancy; };
+struct Event { char type[32]; float temperature; bool hasTemperature; uint64_t timestamp; uint32_t uptime; uint32_t sequence; };
 void fillReading(JsonObject object, const Sample& sample);
 void enqueueEvent(const char* type, float temperature = NAN);
-Sample current = {NAN, NAN, false, true, 0, false, false, false, 0};
+Sample current = {NAN, NAN, false, true, 0, false, false, false, 0, OCCUPANCY_UNKNOWN};
+OccupancyMonitor occupancy;
 portMUX_TYPE sampleMux = portMUX_INITIALIZER_UNLOCKED;
 QueueHandle_t eventQueue;
 uint32_t eventSequence = 0;
@@ -78,6 +80,8 @@ void fillReading(JsonObject object, const Sample& sample) {
   object["redLED"] = sample.red; object["redLEDBlinking"] = sample.blinking;
   object["motionLED"] = sample.motion; object["timestamp"][".sv"] = "timestamp";
   if (sample.sampledAt) object["sampledAt"] = sample.sampledAt;
+  object["occupancyStatus"] = occupancyName(sample.occupancy);
+  object["occupancyTimeoutSeconds"] = OCCUPANCY_TIMEOUT_SECONDS;
 }
 String uniqueKey(uint64_t time, uint32_t sequence) {
   char key[64]; snprintf(key,sizeof(key),"%013llu-%08lx-%08lx",(unsigned long long)time,(unsigned long)bootId,(unsigned long)sequence); return String(key);
@@ -142,6 +146,8 @@ void setup() {
   digitalWrite(RED_LED,LOW); digitalWrite(GREEN_LED,LOW); digitalWrite(MOTION_LED,LOW);
   dht.begin(); eventQueue=xQueueCreate(128,sizeof(Event));
   if (!eventQueue) { Serial.println("Unable to allocate event queue"); ESP.restart(); }
+  occupancy = OccupancyMonitor(millis());
+  enqueueEvent("occupancy_unknown");
   WiFi.mode(WIFI_STA); WiFi.setAutoReconnect(true); WiFi.begin(WIFI_SSID,WIFI_PASSWORD);
   configTime(0,0,"pool.ntp.org","time.google.com");
   xTaskCreatePinnedToCore(networkTask,"firebase-network",16384,nullptr,1,nullptr,0);
@@ -152,6 +158,8 @@ void loop() {
   Sample next; portENTER_CRITICAL(&sampleMux); next=current; portEXIT_CRITICAL(&sampleMux);
   uint32_t now=millis(); bool motion=digitalRead(PIR_PIN)==HIGH;
   next.sampledAt = clockReady() ? epochMs() : 0;
+  if (occupancy.update(motion, now)) enqueueEvent(occupancyEventName(occupancy.status));
+  next.occupancy = occupancy.status;
   digitalWrite(MOTION_LED,motion?HIGH:LOW); next.motion=motion;
   if(motion!=previousMotion) { enqueueEvent(motion?"motion_started":"motion_stopped"); Serial.println(motion?"Motion detected":"Motion stopped"); previousMotion=motion; }
   if(now-lastDht>=2000) {

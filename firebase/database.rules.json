@@ -29,6 +29,8 @@
         "motionLED": { ".validate": "newData.isBoolean()" },
         "timestamp": { ".validate": "newData.isNumber() && newData.val() === now" },
         "sampledAt": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 5000 && newData.val() >= now - 86400000" },
+        "occupancyStatus": { ".validate": "(newData.val() === 'unknown' || newData.val() === 'likely_occupied' || newData.val() === 'no_recent_activity') && (newData.parent().child('motion').val() !== true || newData.val() === 'likely_occupied')" },
+        "occupancyTimeoutSeconds": { ".validate": "newData.isNumber() && newData.val() === 600" },
         "$other": { ".validate": false }
       }
     },
@@ -50,6 +52,8 @@
           "motionLED": { ".validate": "newData.isBoolean()" },
           "timestamp": { ".validate": "newData.isNumber() && newData.val() === now" },
           "sampledAt": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 5000 && newData.val() >= now - 86400000" },
+          "occupancyStatus": { ".validate": "(newData.val() === 'unknown' || newData.val() === 'likely_occupied' || newData.val() === 'no_recent_activity') && (newData.parent().child('motion').val() !== true || newData.val() === 'likely_occupied')" },
+          "occupancyTimeoutSeconds": { ".validate": "newData.isNumber() && newData.val() === 600" },
           "$other": { ".validate": false }
         }
       }
@@ -61,7 +65,7 @@
         "$event": {
           ".write": "auth != null && root.child('access/devices').child(auth.uid).val() === $device && newData.exists() && (!data.exists() || (data.child('type').val() === newData.child('type').val() && data.child('timestamp').val() === newData.child('timestamp').val() && data.child('temperature').val() === newData.child('temperature').val()))",
           ".validate": "newData.hasChildren(['type','timestamp','receivedAt']) && (!(newData.child('type').val() === 'normal' || newData.child('type').val() === 'warning' || newData.child('type').val() === 'danger') || (newData.hasChild('temperature') && ((newData.child('type').val() === 'normal' && newData.child('temperature').val() <= 32) || (newData.child('type').val() === 'warning' && newData.child('temperature').val() > 32 && newData.child('temperature').val() <= 35) || (newData.child('type').val() === 'danger' && newData.child('temperature').val() > 35))))",
-          "type": { ".validate": "newData.val() === 'motion_started' || newData.val() === 'motion_stopped' || newData.val() === 'normal' || newData.val() === 'warning' || newData.val() === 'danger' || newData.val() === 'sensor_error' || newData.val() === 'sensor_recovered' || newData.val() === 'connection_restored'" },
+          "type": { ".validate": "newData.val() === 'motion_started' || newData.val() === 'motion_stopped' || newData.val() === 'normal' || newData.val() === 'warning' || newData.val() === 'danger' || newData.val() === 'sensor_error' || newData.val() === 'sensor_recovered' || newData.val() === 'connection_restored' || newData.val() === 'occupancy_unknown' || newData.val() === 'occupancy_likely_occupied' || newData.val() === 'occupancy_no_recent_activity'" },
           "timestamp": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 5000 && newData.val() >= now - 86400000" },
           "receivedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
           "temperature": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },

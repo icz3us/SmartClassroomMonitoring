@@ -846,6 +846,9 @@ label {
   gap: 22px;
   margin-bottom: 22px;
 }
+.occupancy-panel {
+  grid-column: 1 / -1;
+}
 .compact {
   padding: 22px;
 }

@@ -6,6 +6,7 @@ import {
   isReadingFresh,
   deviceConnectionStatus,
   motionFor,
+  occupancyFor,
   type SensorEvent,
   type Reading,
 } from "../lib/model";
@@ -57,6 +58,32 @@ test("quick motion transitions update between snapshots without replaying older 
     motionFor({ ...reading, timestamp: 12000, sampledAt: 11000 }, [started]),
     false,
   );
+});
+
+test("occupancy uses the edge estimate and becomes unknown for stale, legacy, or invalid data", () => {
+  const reading = {
+    motion: false,
+    occupancyStatus: "likely_occupied",
+  } as Reading;
+  assert.equal(occupancyFor(reading, true), "likely_occupied");
+  assert.equal(occupancyFor(reading, false), "unknown");
+  assert.equal(
+    occupancyFor({ ...reading, occupancyStatus: "no_recent_activity" }, true),
+    "no_recent_activity",
+  );
+  assert.equal(
+    occupancyFor({ ...reading, occupancyStatus: "unknown" }, true),
+    "unknown",
+  );
+  assert.equal(occupancyFor({ motion: true } as Reading, true), "unknown");
+  assert.equal(
+    occupancyFor(
+      { ...reading, occupancyStatus: "vacant" } as unknown as Reading,
+      true,
+    ),
+    "unknown",
+  );
+  assert.equal(occupancyFor(null, true), "unknown");
 });
 
 test("statistics exclude missing and failed samples and preserve zero values", () => {

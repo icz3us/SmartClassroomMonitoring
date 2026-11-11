@@ -38,6 +38,14 @@ The warning integration test writes a device event and verifies delivery through
 
 ## Physical-device and cloud acceptance matrix
 
+Occupancy state-machine assertions are in `tests/occupancy-firmware.cpp` and compile the exact shared Arduino `occupancy.h` implementation. Compile with a C++17 compiler, for example:
+
+```sh
+g++ -std=c++17 -c tests/occupancy-firmware.cpp -o occupancy-test.o
+```
+
+These assertions cover startup, the exact 600-second timeout, motion extension, continuous HIGH signals, repeated state stability, and unsigned millisecond-clock rollover. TypeScript tests separately cover stale/offline, missing legacy fields, and invalid occupancy values. Database tests verify that the device can store all three states and transition events while viewers remain read-only, and reject invalid states, timeouts, or an inactive estimate with motion HIGH.
+
 These tests need your configured Firebase project and ESP32.
 
 | Test | Expected result |
@@ -52,6 +60,11 @@ These tests need your configured Firebase project and ESP32.
 | Wi-Fi restored | Automatic reconnect; bounded queue drains; connection-restored event |
 | Firebase unavailable / permission revoked | Backoff; no loop blocking; local LEDs work; no unauthorized writes |
 | Device power removed | Dashboard offline after trusted timestamp ages; old values not presented as current |
+| PIR HIGH, then LOW for less than ten minutes | Occupancy stays Likely occupied while current motion may be idle |
+| PIR remains HIGH or motion repeats | Occupancy timer renews; no duplicate occupancy transition while status stays the same |
+| Full ten-minute quiet interval | One No recent activity transition, without claiming confirmed vacancy |
+| Device restarts | Occupancy unknown until motion or a full observation window; previous occupancy is not restored as current |
+| Missing occupancy fields in older readings | Occupancy unknown; no browser-side inference or fabricated historical states |
 | Browser network disconnected | Database-disconnected message; freshness ages; reconnect listener recovers |
 | Browser on a separate mobile network | Same authenticated live data as local-network browser |
 | Device online for >65 minutes | ID token renews; uploads continue |

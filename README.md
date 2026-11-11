@@ -104,9 +104,9 @@ No previous Arduino sketch existed in this repository. The supplied sketch imple
 
 | Route | Features |
 |---|---|
-| `/` | Live temperature/humidity/PIR, freshness, firmware LED states, recent events |
+| `/` | Live temperature/humidity, edge occupancy estimate, current PIR, freshness, firmware LED states, recent events |
 | `/analytics` | Recharts, 15m/1h/24h/7d filters, real sample statistics, paginated table, CSV |
-| `/motion` | Current PIR state, last detection, rising-edge count, chronological event timeline |
+| `/motion` | Edge occupancy estimate, current PIR state, last detection, rising-edge count, motion/occupancy timeline |
 | `/alerts` | Normal/warning/danger/sensor transitions; warning/danger/resolved filters |
 | `/device` | Hardware and pins, actual connection state, data flow |
 | `/settings` | Browser-local name, light/dark theme, local date/time format, freshness timing, account |
@@ -119,6 +119,16 @@ If stale or sensor-error data exists, current measurements show unavailable whil
 History loads at most 1,500 samples and 1,000 events per selected window. At one sample/minute, a 7-day selection can be capped to the newest 25 hours; the interface explicitly labels these as loaded samples. Statistics are sample averages rather than time-weighted averages. CSV exports the loaded samples. Motion counts count stored rising-edge transitions only. Events have device occurrence time and server arrival time; current data freshness uses only server timestamps.
 
 Last detected motion is independent of the selected time filter and remains visible when the device goes offline. Its lookup scans events newest first in pages of at most 100, stopping at the newest stored detection. This supports older firmware record keys that are not chronological; only retained events can be found. Device status becomes Offline when readings exceed the configured freshness timeout (30 seconds by default), checked at the selected display refresh interval. If the browser loses its Firebase connection, status is shown as unavailable rather than claiming the ESP32 is online.
+
+### Edge occupancy estimate
+
+The ESP32 calculates occupancy locally with the shared `firmware/SmartClassroom/occupancy.h` state machine. Any observed HIGH PIR signal sets **Likely occupied** and renews a 600-second inactivity timer. A LOW PIR signal does not immediately end that estimate. After ten minutes without detected motion, the ESP32 reports **No recent activity**. On restart, the estimate is **Occupancy unknown** until motion is observed or a full ten-minute observation window completes. The calculation uses `millis()` and continues without Wi-Fi or Firebase.
+
+Each new latest/historical reading includes `occupancyStatus` (`likely_occupied`, `no_recent_activity`, or `unknown`) and `occupancyTimeoutSeconds: 600`. State changes produce `occupancy_likely_occupied`, `occupancy_no_recent_activity`, and restart `occupancy_unknown` events. Motion detection counts still count only `motion_started`; occupancy events are separate. Analytics tables and CSV retain the device-reported historical estimate, including while the device is offline.
+
+The website shows current occupancy as unknown whenever telemetry is stale or the browser cannot confirm the database connection. Old firmware/readings without occupancy fields also show unknown; the browser does not invent estimates from historical motion. Occupancy is not attendance, a person count, or confirmation that a quiet room is empty.
+
+Before use, publish the updated `firebase/database.rules.json` if you use the repository's restrictive rules, then upload the occupancy-enabled sketch with `occupancy.h` in the same Arduino sketch folder. Existing records remain valid; they are not backfilled with invented occupancy states. The timeout is a fixed firmware setting, displayed read-only on the website.
 
 ## 5. Vercel deployment
 

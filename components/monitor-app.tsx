@@ -43,6 +43,8 @@ import {
   deviceId,
   eventLabels,
   summarize,
+  occupancyFor,
+  occupancyLabels,
   type SensorEvent,
 } from "@/lib/model";
 
@@ -321,7 +323,7 @@ function EventList({ events }: { events: SensorEvent[] }) {
         .map((e) => (
           <div className="event" key={e.id}>
             <span
-              className={`event-symbol ${e.type === "danger" ? "danger" : e.type === "warning" ? "warning" : "normal"}`}
+              className={`event-symbol ${e.type === "danger" ? "danger" : e.type === "warning" ? "warning" : e.type.startsWith("occupancy_") && e.type !== "occupancy_likely_occupied" ? "muted" : "normal"}`}
             >
               {e.type.startsWith("motion") ? (
                 <Activity size={16} />
@@ -433,27 +435,24 @@ function Overview() {
         </section>
         <section className="metric">
           <div className="metric-label">
-            Motion detection
+            Occupancy estimate
             <Activity size={19} />
           </div>
-          <div className="motion-value">
-            {m.fresh
-              ? m.motion
-                ? "Motion detected"
-                : m.recentMotion
-                  ? "Recent motion"
-                  : "No motion"
-              : "Unavailable"}
-          </div>
-          <Badge
-            tone={m.fresh && (m.motion || m.recentMotion) ? "normal" : "muted"}
-          >
+          <div className="motion-value">{m.occupancyLabel}</div>
+          <Badge tone={m.fresh && m.motion ? "normal" : "muted"}>
             {m.fresh
               ? !m.motion && m.recentMotion
                 ? "Detected recently · PIR now idle"
-                : "PIR sensor active"
+                : m.motion
+                  ? "Motion detected"
+                  : "PIR now idle"
               : "No fresh signal"}
           </Badge>
+          <p className="reading-updated">
+            {m.fresh && !m.latest?.occupancyStatus
+              ? "Upload the occupancy-enabled firmware."
+              : "Motion-based estimate · 10-minute timeout"}
+          </p>
           <div className="metric-bottom">
             Last detected <span>{m.formatTime(m.lastMotion)}</span>
           </div>
@@ -637,10 +636,10 @@ function Analytics() {
             disabled={!rows.length}
             onClick={() => {
               const csv = [
-                "timestamp,temperature,humidity,motion,status",
+                "timestamp,temperature,humidity,motion,status,occupancy",
                 ...rows.map(
                   (r) =>
-                    `${new Date(r.timestamp).toISOString()},${r.temperature ?? ""},${r.humidity ?? ""},${r.motion},${r.sensorError ? "sensor_error" : r.temperatureStatus}`,
+                    `${new Date(r.timestamp).toISOString()},${r.temperature ?? ""},${r.humidity ?? ""},${r.motion},${r.sensorError ? "sensor_error" : r.temperatureStatus},${occupancyFor(r, true)}`,
                 ),
               ].join("\n");
               const url = URL.createObjectURL(
@@ -666,6 +665,7 @@ function Analytics() {
                 <th>Temperature</th>
                 <th>Humidity</th>
                 <th>Motion</th>
+                <th>Occupancy estimate</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -676,6 +676,7 @@ function Analytics() {
                   <td>{r.temperature ?? "–"}°C</td>
                   <td>{r.humidity ?? "–"}%</td>
                   <td>{r.motion ? "Detected" : "No motion"}</td>
+                  <td>{occupancyLabels[occupancyFor(r, true)]}</td>
                   <td>
                     <Badge tone={r.sensorError ? "muted" : r.temperatureStatus}>
                       {r.sensorError ? "Sensor error" : r.temperatureStatus}
@@ -713,14 +714,28 @@ function Analytics() {
 }
 function Motion() {
   const m = useMonitor();
-  const events = m.events.filter((e) => e.type.startsWith("motion"));
+  const events = m.events.filter(
+    (e) => e.type.startsWith("motion") || e.type.startsWith("occupancy_"),
+  );
   return (
     <>
       <div className="section-toolbar">
-        <p>PIR movement events, not attendance or people counts.</p>
+        <p>Motion and estimated occupancy, not attendance or people counts.</p>
         <PeriodFilter />
       </div>
       <div className="stats-grid">
+        <Panel
+          title="Occupancy estimate"
+          detail="Calculated on the ESP32 from motion and a 10-minute inactivity timeout"
+          className="occupancy-panel"
+        >
+          <div className="feature-value">{m.occupancyLabel}</div>
+          <p className="padded-note">
+            {m.fresh && !m.latest?.occupancyStatus
+              ? "Upload the occupancy-enabled firmware to enable this estimate."
+              : "A quiet classroom may still be occupied. No recent activity does not confirm vacancy."}
+          </p>
+        </Panel>
         <Panel title="Current motion state">
           <div className="feature-value">
             <Activity />
@@ -746,8 +761,8 @@ function Motion() {
         </Panel>
       </div>
       <Panel
-        title="Motion activity timeline"
-        detail="Each entry represents a change in the PIR signal"
+        title="Motion & occupancy timeline"
+        detail="PIR signal changes and occupancy estimate transitions"
       >
         <EventList events={events} />
       </Panel>
@@ -929,6 +944,14 @@ function SettingsPage() {
           <p>Normal ≤32°C · Warning &gt;32°C to 35°C · Danger &gt;35°C</p>
           <small>
             Read-only. Remote hardware configuration is not enabled.
+          </small>
+        </div>
+        <div className="readonly-settings">
+          <h3>Occupancy estimate</h3>
+          <p>10-minute inactivity timeout, processed on the ESP32.</p>
+          <small>
+            Motion extends the likely-occupied period. Startup and stale device
+            data show unknown. This is not a people count or proof of vacancy.
           </small>
         </div>
         <div>

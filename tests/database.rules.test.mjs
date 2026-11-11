@@ -165,6 +165,44 @@ test("device can atomically upload only its own valid paths", async () => {
     }),
   );
 });
+test("device can record occupancy estimates and transitions while viewers remain read-only", async () => {
+  const device = env.authenticatedContext("esp32").database();
+  const viewer = env.authenticatedContext("teacher").database();
+  for (const status of ["unknown", "likely_occupied", "no_recent_activity"]) {
+    const value = {
+      ...reading(),
+      occupancyStatus: status,
+      occupancyTimeoutSeconds: 600,
+    };
+    await assertSucceeds(
+      update(ref(device), {
+        "latestReadings/classroom-01": value,
+        [`readings/classroom-01/occupancy-${status}`]: value,
+        [`events/classroom-01/occupancy-${status}`]: {
+          type: `occupancy_${status}`,
+          timestamp: Date.now(),
+          receivedAt: serverTimestamp(),
+        },
+      }),
+    );
+    const snapshot = await get(ref(viewer, "latestReadings/classroom-01"));
+    assert.equal(snapshot.child("occupancyStatus").val(), status);
+    await assertFails(set(ref(viewer, "latestReadings/classroom-01"), value));
+  }
+  for (const invalid of [
+    { occupancyStatus: "vacant" },
+    { occupancyTimeoutSeconds: 0 },
+    { occupancyTimeoutSeconds: "600" },
+    { motion: true, occupancyStatus: "no_recent_activity" },
+  ])
+    await assertFails(
+      set(ref(device, "latestReadings/classroom-01"), {
+        ...reading(),
+        ...invalid,
+      }),
+    );
+});
+
 test("sensor failure heartbeat does not require invalid sensor values", async () => {
   const db = env.authenticatedContext("esp32").database();
   const value = reading();
