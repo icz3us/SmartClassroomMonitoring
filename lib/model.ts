@@ -7,6 +7,7 @@ export const occupancyLabels: Record<OccupancyStatus, string> = {
   unknown: "Occupancy unknown",
 };
 export interface Reading {
+  monitoringEnabled?: boolean;
   temperature?: number;
   humidity?: number;
   motion: boolean;
@@ -43,13 +44,14 @@ export function occupancyFor(
   reading: Reading | null,
   fresh: boolean,
 ): OccupancyStatus {
-  if (!fresh) return "unknown";
+  if (!fresh || reading?.monitoringEnabled === false) return "unknown";
   return reading?.occupancyStatus === "likely_occupied" ||
     reading?.occupancyStatus === "no_recent_activity"
     ? reading.occupancyStatus
     : "unknown";
 }
 export function motionFor(reading: Reading | null, events: SensorEvent[]) {
+  if (reading?.monitoringEnabled === false) return false;
   let motion = reading?.motion ?? false;
   let timestamp = reading?.sampledAt ?? reading?.timestamp ?? 0;
   for (const event of events) {

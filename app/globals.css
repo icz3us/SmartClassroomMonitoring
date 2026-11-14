@@ -1,4 +1,11 @@
 @import "tailwindcss";
+.device-visual {
+  display: block;
+  width: calc(100% - 44px);
+  max-width: 390px;
+  height: auto;
+  margin: 0 auto 12px;
+}
 :root {
   --background: #f7f8fa;
   --panel: #fff;
@@ -1478,4 +1485,7 @@ td {
     transition: none !important;
     animation: none !important;
   }
+}
+.control-toolbar {
+  padding: 0 22px 22px;
 }

@@ -1,13 +1,19 @@
 import { db, auth } from "./admin.mjs";
 const [role, email, device = "classroom-01"] = process.argv.slice(2);
-if (!["viewer", "device"].includes(role) || !email || /[.#$\[\]/]/.test(device))
+if (
+  !["viewer", "controller", "device"].includes(role) ||
+  !email ||
+  /[.#$\[\]/]/.test(device)
+)
   throw new Error(
-    "Usage: node scripts/grant-access.mjs viewer|device email classroom-01",
+    "Usage: node scripts/grant-access.mjs viewer|controller|device email classroom-01",
   );
 const { uid } = await auth.getUserByEmail(email);
-if (role === "viewer")
+if (role === "viewer" || role === "controller")
   await db.ref(`access/viewers/${uid}/${device}`).set(true);
 else await db.ref(`access/devices/${uid}`).set(device);
+if (role === "controller")
+  await db.ref(`access/controllers/${uid}/${device}`).set(true);
 await db
   .ref(`settings/${device}`)
   .set({ warningTemperature: 32, dangerTemperature: 35 });

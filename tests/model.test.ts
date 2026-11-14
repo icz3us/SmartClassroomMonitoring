@@ -21,6 +21,22 @@ test("firmware threshold boundaries are exact", () => {
   ] as const)
     assert.equal(statusFor(value), expected);
 });
+test("paused monitoring cannot report occupancy or replay motion events", () => {
+  const reading = {
+    monitoringEnabled: false,
+    motion: true,
+    occupancyStatus: "likely_occupied",
+    timestamp: 1000,
+  } as Reading;
+  assert.equal(occupancyFor(reading, true), "unknown");
+  assert.equal(
+    motionFor(reading, [
+      { type: "motion_started", timestamp: 2000 } as SensorEvent,
+    ]),
+    false,
+  );
+  assert.equal(motionFor({ ...reading, monitoringEnabled: true }, []), true);
+});
 test("power loss expires freshness and missing or implausible future timestamps are unavailable", () => {
   const now = 1700000000000;
   assert.equal(isReadingFresh(now - 30000, now, 30), true);

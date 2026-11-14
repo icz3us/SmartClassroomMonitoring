@@ -9,7 +9,9 @@ No existing sketch was present in the repository. `SmartClassroom/SmartClassroom
 3. Open `SmartClassroom/SmartClassroom.ino`. Copy `config.example.h` to `config.h` in the same folder. The latter is gitignored.
 4. Configure Wi-Fi and Firebase web API key, database HTTPS URL **without a trailing slash**, and a dedicated Firebase email/password device account. Grant its UID access using the database's `access/devices` map as described in the root README.
 5. Fill `FIREBASE_ROOT_CA` with the verified PEM root CA certificates for your database hostname, `identitytoolkit.googleapis.com`, and `securetoken.googleapis.com`. Inspect the certificate chains using a trusted browser's certificate viewer or `openssl s_client -showcerts -connect HOST:443 -servername HOST`. Obtain roots from the CA's official repository (Google Trust Services: https://pki.goog/repository/), verify fingerprints independently, and concatenate required PEM roots. Include trust anchors, not short-lived leaf certificates. Rotate them before expiry or issuer changes. **Never use `setInsecure()`.** The placeholder intentionally prevents unverified TLS connections.
-6. Upload. Open Serial Monitor at 115200 baud. Expect local readings every 2 seconds and acknowledged Firebase uploads every 5 seconds once Wi-Fi, NTP, TLS and authentication succeed.
+6. Upload. Open Serial Monitor at 115200 baud. The sketch prints `PIR sensor warming up...` and waits 60 seconds with LEDs off before starting monitoring or networking. After `PIR sensor ready!`, expect raw PIR values once per second, local temperature/humidity readings every 2 seconds, and acknowledged Firebase uploads every 5 seconds once Wi-Fi, NTP, TLS and authentication succeed. The occupancy observation window starts after warm-up.
+
+For the startup diagnostic, leave the PIR undisturbed for two minutes after the ready message. Record whether `PIR RAW VALUE: 0` appears or the reading stays at `1`. The logged value is the same sample used for motion processing. A persistent HIGH after warm-up requires further sensor/wiring investigation; this wait alone does not establish the cause.
 
 ## Preserved behavior
 
@@ -24,6 +26,9 @@ No existing sketch was present in the repository. `SmartClassroom/SmartClassroom
 The loop does not perform network requests. A FreeRTOS task on core 0 performs HTTPS, token renewal, reconnects, and exponential retry up to 60 seconds. DHT failures publish `sensorError: true` without invalid temperature/humidity, and preserve the previous local LED condition. Initial LEDs stay off until the first valid reading.
 
 ## Data and reliability
+
+- The network task reads `controls/DEVICE_ID/enabled` and the local loop applies the mode. Paused mode stops DHT/PIR sampling and turns all LEDs off, but continues Wi-Fi, command polling, and heartbeat uploads with `monitoringEnabled: false`. No measurements or history samples are published while paused. The `sensorError` flag stays true to preserve compatibility with older dashboards; the updated dashboard displays “Monitoring paused.”
+- Applied mode changes are saved with ESP32 Preferences and restored after reboot. Failed command reads retain the current mode; missing commands default to enabled. Resume resets occupancy to unknown and reads the DHT again. The initial 60-second startup warm-up still applies after a power cycle. This is software pause, not electrical power isolation.
 
 - `occupancy.h` implements the occupancy estimate locally: motion keeps `likely_occupied` active, ten minutes without motion changes it to `no_recent_activity`, and restart begins with `unknown`. HIGH PIR readings continuously renew the timer. The timer works offline and across `millis()` rollover; it is not a person counter or a vacancy detector.
 - Keep `occupancy.h` beside the sketch when opening it in Arduino IDE. Readings carry `occupancyStatus` and `occupancyTimeoutSeconds: 600`; occupancy transitions are stored separately from motion edges, including an unknown baseline on every reboot. The website overrides current occupancy to unknown for stale/unreachable telemetry while retaining historical estimates.

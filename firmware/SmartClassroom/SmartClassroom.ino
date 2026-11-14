@@ -5,6 +5,7 @@
 #include <DHT.h>
 #include <time.h>
 #include <esp_system.h>
+#include <Preferences.h>
 #include "config.h"
 #include "occupancy.h"
 
@@ -18,11 +19,13 @@ const float WARN_TEMP = 32.0;
 const float DANGER_TEMP = 35.0;
 DHT dht(DHTPIN, DHTTYPE);
 
-struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; uint64_t sampledAt; uint8_t occupancy; };
+struct Sample { float temperature; float humidity; bool motion; bool sensorError; uint8_t status; bool green; bool red; bool blinking; uint64_t sampledAt; uint8_t occupancy; bool monitoringEnabled; };
 struct Event { char type[32]; float temperature; bool hasTemperature; uint64_t timestamp; uint32_t uptime; uint32_t sequence; };
 void fillReading(JsonObject object, const Sample& sample);
 void enqueueEvent(const char* type, float temperature = NAN);
-Sample current = {NAN, NAN, false, true, 0, false, false, false, 0, OCCUPANCY_UNKNOWN};
+Sample current = {NAN, NAN, false, true, 0, false, false, false, 0, OCCUPANCY_UNKNOWN, true};
+bool monitoringRequested = true;
+Preferences monitoringPreferences;
 OccupancyMonitor occupancy;
 portMUX_TYPE sampleMux = portMUX_INITIALIZER_UNLOCKED;
 QueueHandle_t eventQueue;
@@ -74,6 +77,7 @@ bool authenticate() {
   return idToken.length() > 0;
 }
 void fillReading(JsonObject object, const Sample& sample) {
+  object["monitoringEnabled"] = sample.monitoringEnabled;
   if (!sample.sensorError) { object["temperature"] = sample.temperature; object["humidity"] = sample.humidity; }
   object["sensorError"] = sample.sensorError; object["motion"] = sample.motion;
   object["temperatureStatus"] = statusName(sample.status); object["greenLED"] = sample.green;
@@ -103,6 +107,15 @@ void networkTask(void*) {
     if (!clockReady() || (now-lastAttempt < retryDelay && (!eventPending || retryDelay != FIREBASE_UPLOAD_INTERVAL_MS))) continue;
     lastAttempt=now;
     if (!authenticate()) { retryDelay=retryDelay<30000?retryDelay*2:60000; restored=true; continue; }
+    String controlResponse;
+    int controlCode=request(String(FIREBASE_DATABASE_URL)+"/controls/"+DEVICE_ID+"/enabled.json?auth="+idToken,"GET","",controlResponse);
+    if (controlCode == 200) {
+      JsonDocument control;
+      if (!deserializeJson(control,controlResponse) && (control.is<bool>() || control.isNull())) {
+        bool enabled=control.isNull() ? true : control.as<bool>();
+        portENTER_CRITICAL(&sampleMux); monitoringRequested=enabled; portEXIT_CRITICAL(&sampleMux);
+      } else Serial.println("Invalid monitoring command; keeping current mode");
+    } else Serial.printf("Monitoring command read failed (HTTP %d); keeping current mode\n",controlCode);
     Sample snapshot; portENTER_CRITICAL(&sampleMux); snapshot=current; portEXIT_CRITICAL(&sampleMux);
     JsonDocument patch;
     fillReading(patch[String("latestReadings/")+DEVICE_ID].to<JsonObject>(),snapshot);
@@ -146,6 +159,13 @@ void setup() {
   digitalWrite(RED_LED,LOW); digitalWrite(GREEN_LED,LOW); digitalWrite(MOTION_LED,LOW);
   dht.begin(); eventQueue=xQueueCreate(128,sizeof(Event));
   if (!eventQueue) { Serial.println("Unable to allocate event queue"); ESP.restart(); }
+  if (!monitoringPreferences.begin("monitor",false)) Serial.println("Monitoring mode storage unavailable");
+  monitoringRequested=monitoringPreferences.getBool("enabled",true);
+  current.monitoringEnabled=monitoringRequested;
+  Serial.println("PIR sensor warming up...");
+  // shortcut: startup monitoring pauses for 60 seconds; use a nonblocking guard if monitoring must start immediately.
+  delay(60000);
+  Serial.println("PIR sensor ready!");
   occupancy = OccupancyMonitor(millis());
   enqueueEvent("occupancy_unknown");
   WiFi.mode(WIFI_STA); WiFi.setAutoReconnect(true); WiFi.begin(WIFI_SSID,WIFI_PASSWORD);
@@ -155,8 +175,36 @@ void setup() {
 void loop() {
   static uint32_t lastDht=0,lastBlink=0; static bool firstReading=true,previousError=true;
   static bool previousMotion=false; static uint8_t previousStatus=0;
-  Sample next; portENTER_CRITICAL(&sampleMux); next=current; portEXIT_CRITICAL(&sampleMux);
-  uint32_t now=millis(); bool motion=digitalRead(PIR_PIN)==HIGH;
+  Sample next; bool enabled;
+  portENTER_CRITICAL(&sampleMux); next=current; enabled=monitoringRequested; portEXIT_CRITICAL(&sampleMux);
+  uint32_t now=millis();
+  if (next.monitoringEnabled != enabled) {
+    next.monitoringEnabled=enabled;
+    if (!monitoringPreferences.putBool("enabled",enabled)) Serial.println("Could not persist monitoring mode for restart");
+    occupancy=OccupancyMonitor(now);
+    enqueueEvent("occupancy_unknown");
+    if (previousMotion) enqueueEvent("motion_stopped");
+    previousMotion=false; firstReading=true; previousError=true;
+    next.temperature=NAN; next.humidity=NAN; next.sensorError=true;
+    next.status=0; next.green=false; next.red=false; next.blinking=false;
+    lastDht=now-2000; lastBlink=now;
+    Serial.println(enabled ? "Monitoring resumed" : "Monitoring paused; Wi-Fi remains connected");
+  }
+  if (!enabled) {
+    digitalWrite(RED_LED,LOW); digitalWrite(GREEN_LED,LOW); digitalWrite(MOTION_LED,LOW);
+    next.temperature=NAN; next.humidity=NAN; next.sensorError=true;
+    next.motion=false; next.green=false; next.red=false; next.blinking=false; next.status=0;
+    next.occupancy=OCCUPANCY_UNKNOWN; next.sampledAt=clockReady() ? epochMs() : 0;
+    portENTER_CRITICAL(&sampleMux); current=next; portEXIT_CRITICAL(&sampleMux);
+    delay(2);
+    return;
+  }
+  int pirRaw=digitalRead(PIR_PIN); bool motion=pirRaw==HIGH;
+  static uint32_t lastPirDebug=0;
+  if (now-lastPirDebug >= 1000) {
+    lastPirDebug=now;
+    Serial.print("PIR RAW VALUE: "); Serial.println(pirRaw);
+  }
   next.sampledAt = clockReady() ? epochMs() : 0;
   if (occupancy.update(motion, now)) enqueueEvent(occupancyEventName(occupancy.status));
   next.occupancy = occupancy.status;

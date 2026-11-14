@@ -17,6 +17,7 @@ import {
   query,
   ref,
   startAt,
+  set,
 } from "firebase/database";
 import { firebaseClient, firebaseConfigured } from "@/lib/firebase";
 import { subscribeLastMotion } from "@/lib/motion.mts";
@@ -61,6 +62,58 @@ function useMonitorState() {
   const [offset, setOffset] = useState(0);
   const [now, setNow] = useState(0);
   const [lastMotion, setLastMotion] = useState<number | null>(null);
+  const [requestedMonitoring, setRequestedMonitoring] = useState<
+    boolean | null
+  >(null);
+  const [canControl, setCanControl] = useState(false);
+  const [controlError, setControlError] = useState("");
+  const [controlSaving, setControlSaving] = useState(false);
+  useEffect(() => {
+    setRequestedMonitoring(null);
+    setCanControl(false);
+    setControlError("");
+    if (!user) return;
+    const { db } = firebaseClient();
+    const stops = [
+      onValue(
+        ref(db, `controls/${deviceId}/enabled`),
+        (s) => {
+          setRequestedMonitoring(s.val() === null ? true : s.val());
+        },
+        (e) => {
+          setRequestedMonitoring(null);
+          setControlError(e.message);
+        },
+      ),
+      onValue(
+        ref(db, `access/controllers/${user.uid}/${deviceId}`),
+        (s) => {
+          setCanControl(s.val() === true);
+        },
+        () => setCanControl(false),
+      ),
+    ];
+    return () => stops.forEach((stop) => stop());
+  }, [user]);
+  const requestMonitoring = async (enabled: boolean) => {
+    if (!user || !canControl || !connected || controlSaving) return;
+    setControlSaving(true);
+    setControlError("");
+    try {
+      await set(
+        ref(firebaseClient().db, `controls/${deviceId}/enabled`),
+        enabled,
+      );
+    } catch (e) {
+      setControlError(
+        e instanceof Error
+          ? e.message
+          : "Could not send the command. Try again.",
+      );
+    } finally {
+      setControlSaving(false);
+    }
+  };
   useEffect(() => {
     try {
       const saved = JSON.parse(
@@ -199,6 +252,7 @@ function useMonitorState() {
     connected,
   );
   const fresh = connectionStatus === "online";
+  const paused = fresh && latest?.monitoringEnabled === false;
   const connectionLabel =
     connectionStatus === "unknown"
       ? "Status unavailable"
@@ -223,8 +277,15 @@ function useMonitorState() {
     preferences,
     savePreferences,
     latest,
+    paused,
+    requestedMonitoring,
+    canControl,
+    controlError,
+    controlSaving,
+    requestMonitoring,
     motion: motionFor(latest, events),
-    recentMotion: fresh && isReadingFresh(lastMotion ?? undefined, now, 10),
+    recentMotion:
+      fresh && !paused && isReadingFresh(lastMotion ?? undefined, now, 10),
     occupancy: occupancyFor(latest, fresh),
     occupancyLabel: occupancyLabels[occupancyFor(latest, fresh)],
     history: history.filter((r) => r.timestamp >= cutoff),

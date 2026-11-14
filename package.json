@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/model.test.ts",
+    "test": "tsx --test tests/model.test.ts tests/device-visual.test.tsx",
     "test:rules": "tsx --test tests/database.rules.test.mjs",
     "test:browser": "playwright test",
     "format": "prettier --write app components lib scripts tests"

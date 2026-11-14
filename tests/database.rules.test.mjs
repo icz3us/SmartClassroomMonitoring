@@ -87,6 +87,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (c) =>
     set(ref(c.database(), "access"), {
       viewers: { teacher: { "classroom-01": true } },
+      controllers: { teacher: { "classroom-01": true } },
       devices: { esp32: "classroom-01" },
     }),
   );
@@ -103,6 +104,90 @@ const reading = () => ({
   motionLED: false,
   timestamp: serverTimestamp(),
   sampledAt: Date.now(),
+});
+test("monitoring commands require device-specific control permission and boolean values", async () => {
+  const controller = env.authenticatedContext("teacher").database();
+  const device = env.authenticatedContext("esp32").database();
+  await assertSucceeds(
+    set(ref(controller, "controls/classroom-01/enabled"), false),
+  );
+  assert.equal(
+    (
+      await assertSucceeds(get(ref(device, "controls/classroom-01/enabled")))
+    ).val(),
+    false,
+  );
+  await assertSucceeds(
+    set(ref(controller, "controls/classroom-01/enabled"), true),
+  );
+  for (const value of ["false", 0, null, { enabled: false }])
+    await assertFails(
+      set(ref(controller, "controls/classroom-01/enabled"), value),
+    );
+  await assertFails(
+    set(ref(controller, "controls/classroom-02/enabled"), false),
+  );
+  await assertFails(set(ref(controller, "controls/classroom-01/power"), false));
+  await assertFails(set(ref(device, "controls/classroom-01/enabled"), false));
+  await assertFails(get(ref(device, "controls/classroom-02/enabled")));
+  await assertSucceeds(
+    get(ref(controller, "access/controllers/teacher/classroom-01")),
+  );
+  await assertFails(
+    get(ref(controller, "access/controllers/another/classroom-01")),
+  );
+  await assertFails(
+    set(ref(controller, "access/controllers/teacher/classroom-02"), true),
+  );
+  for (const db of [
+    env.unauthenticatedContext().database(),
+    env.authenticatedContext("outsider").database(),
+  ]) {
+    await assertFails(get(ref(db, "controls/classroom-01/enabled")));
+    await assertFails(set(ref(db, "controls/classroom-01/enabled"), false));
+  }
+  await env.withSecurityRulesDisabled(async (c) =>
+    set(ref(c.database(), "access/controllers/teacher/classroom-01"), null),
+  );
+  await assertSucceeds(get(ref(controller, "controls/classroom-01/enabled")));
+  await assertFails(
+    set(ref(controller, "controls/classroom-01/enabled"), false),
+  );
+});
+test("paused heartbeats contain no live measurements, motion, or lit LEDs", async () => {
+  const db = env.authenticatedContext("esp32").database();
+  const paused = {
+    ...reading(),
+    monitoringEnabled: false,
+    sensorError: true,
+    greenLED: false,
+    occupancyStatus: "unknown",
+  };
+  delete paused.temperature;
+  delete paused.humidity;
+  await assertSucceeds(set(ref(db, "latestReadings/classroom-01"), paused));
+  for (const invalid of [
+    { greenLED: true },
+    { motion: true },
+    { temperature: 28 },
+    { occupancyStatus: "likely_occupied" },
+  ])
+    await assertFails(
+      set(ref(db, "latestReadings/classroom-01"), { ...paused, ...invalid }),
+    );
+  await assertFails(set(ref(db, "readings/classroom-01/paused"), paused));
+  await assertSucceeds(
+    set(ref(db, "latestReadings/classroom-01"), {
+      ...reading(),
+      monitoringEnabled: true,
+    }),
+  );
+  await assertSucceeds(
+    set(ref(db, "readings/classroom-01/resumed"), {
+      ...reading(),
+      monitoringEnabled: true,
+    }),
+  );
 });
 test("anonymous and unapproved accounts cannot read or write", async () => {
   for (const db of [

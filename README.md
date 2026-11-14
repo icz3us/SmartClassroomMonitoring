@@ -114,7 +114,15 @@ No previous Arduino sketch existed in this repository. The supplied sketch imple
 
 Client-side auth gates the interface; Firebase rules are the actual data boundary. No sensitive data is server-rendered. Firebase subscriptions are removed on unmount/logout. Latest telemetry is separate from historical records. Connection state derives from server-stamped readings plus Firebase server clock offset and a stale timeout, never an `online` boolean. Browser connection loss is shown separately from device freshness.
 
-If stale or sensor-error data exists, current measurements show unavailable while historical data remains accessible. PIR indicates movement only, never people count or attendance. There are no invented humidity alert thresholds, firmware versions, battery levels, or remote hardware controls.
+If stale or sensor-error data exists, current measurements show unavailable while historical data remains accessible. PIR indicates movement only, never people count or attendance. There are no invented humidity alert thresholds, firmware versions, or battery levels.
+
+### Website monitoring control
+
+Device information includes **Turn monitoring off/on** for authorized controllers. Off pauses sensor sampling and turns off all three LEDs while Wi-Fi and status uploads stay active. It does not disconnect power. The dashboard shows a pending command until fresh telemetry reports the requested mode; unavailable devices and older firmware cannot be controlled. Commands may take several seconds or longer during network retries.
+
+Deploy `firebase/database.rules.json`, upload the updated ESP32 sketch, and grant your existing account control access with `node scripts/grant-access.mjs controller YOUR_EMAIL classroom-01` using the existing administrator credentials. Viewer accounts remain read-only unless granted controller access. Remove `access/controllers/USER_UID/classroom-01` to revoke control. Control commands live at `controls/classroom-01/enabled`; only the device writes the reported `monitoringEnabled` state in telemetry.
+
+The ESP32 stores applied mode changes locally for restart and checks Firebase for the latest requested mode after reconnecting. On communication failure it keeps the last applied mode. While paused there are no new sensor-history samples; resuming starts a new occupancy observation window. A true power-off/on feature requires an independently powered smart plug or relay controller, which is not part of the current hardware.
 
 History loads at most 1,500 samples and 1,000 events per selected window. At one sample/minute, a 7-day selection can be capped to the newest 25 hours; the interface explicitly labels these as loaded samples. Statistics are sample averages rather than time-weighted averages. CSV exports the loaded samples. Motion counts count stored rising-edge transitions only. Events have device occurrence time and server arrival time; current data freshness uses only server timestamps.
 

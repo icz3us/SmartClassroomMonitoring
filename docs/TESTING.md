@@ -50,6 +50,13 @@ These tests need your configured Firebase project and ESP32.
 
 | Test | Expected result |
 |---|---|
+| Controller turns monitoring off | Pending state until device reports paused; all LEDs off, no sensor history, heartbeat continues |
+| Controller turns monitoring on | Fresh DHT reading; PIR monitoring resumes; occupancy starts a new observation window |
+| Viewer attempts control or controller targets another device | Database denies the write |
+| Paused device restarts or loses Wi-Fi | Last applied paused mode remains; no false live measurements; reconnect fetches latest command |
+| Old firmware or offline device | Control unavailable; no claim that a command was applied |
+| Power on with PIR HIGH during warm-up | Warming-up message; LEDs off and no monitoring/network startup for 60 seconds; ready message before PIR processing |
+| PIR undisturbed for two minutes after ready | Raw value logged once per second; record whether LOW appears or HIGH persists for sensor/wiring investigation |
 | Valid temperature ≤32°C (including exactly 32) | Green LED on; normal UI |
 | Temperature >32°C and ≤35°C (including exactly 35) | Green off; red toggles every 300ms; warning UI says Blinking |
 | Temperature >35°C | Red continuously on; danger UI |

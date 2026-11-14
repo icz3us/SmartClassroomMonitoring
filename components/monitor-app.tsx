@@ -37,6 +37,7 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { DeviceVisual } from "@/components/device-visual";
 import { useMonitor } from "@/components/monitor-provider";
 import { firebaseClient, firebaseConfigured } from "@/lib/firebase";
 import {
@@ -353,12 +354,14 @@ function EventList({ events }: { events: SensorEvent[] }) {
 function Overview() {
   const m = useMonitor();
   const r = m.latest;
-  const available = m.fresh && !r?.sensorError;
+  const available = m.fresh && !m.paused && !r?.sensorError;
   const status = !m.fresh
     ? m.connectionLabel
-    : r?.sensorError
-      ? "Sensor error"
-      : r?.temperatureStatus || "Unavailable";
+    : m.paused
+      ? "Monitoring paused"
+      : r?.sensorError
+        ? "Sensor error"
+        : r?.temperatureStatus || "Unavailable";
   return (
     <>
       <div
@@ -375,14 +378,18 @@ function Overview() {
                 ? "Classroom temperature is elevated"
                 : status === "danger"
                   ? "Classroom temperature exceeds 35°C"
-                  : status === "Sensor error"
-                    ? "The DHT11 could not provide a valid reading"
-                    : "Waiting for a fresh device reading"}
+                  : m.paused
+                    ? "Monitoring is paused"
+                    : status === "Sensor error"
+                      ? "The DHT11 could not provide a valid reading"
+                      : "Waiting for a fresh device reading"}
           </strong>
           <p>
-            {available
-              ? "Temperature thresholds follow your ESP32 firmware."
-              : "Check device power, Wi-Fi, and Firebase connectivity."}
+            {m.paused
+              ? "Sensors and LEDs are off. Resume monitoring from Device information."
+              : available
+                ? "Temperature thresholds follow your ESP32 firmware."
+                : "Check device power, Wi-Fi, and Firebase connectivity."}
           </p>
         </div>
       </div>
@@ -440,13 +447,15 @@ function Overview() {
           </div>
           <div className="motion-value">{m.occupancyLabel}</div>
           <Badge tone={m.fresh && m.motion ? "normal" : "muted"}>
-            {m.fresh
-              ? !m.motion && m.recentMotion
-                ? "Detected recently · PIR now idle"
-                : m.motion
-                  ? "Motion detected"
-                  : "PIR now idle"
-              : "No fresh signal"}
+            {m.paused
+              ? "Monitoring paused"
+              : m.fresh
+                ? !m.motion && m.recentMotion
+                  ? "Detected recently · PIR now idle"
+                  : m.motion
+                    ? "Motion detected"
+                    : "PIR now idle"
+                : "No fresh signal"}
           </Badge>
           <p className="reading-updated">
             {m.fresh && !m.latest?.occupancyStatus
@@ -473,6 +482,62 @@ function Overview() {
               View analytics <ArrowRight size={14} />
             </Link>
           </div>
+        </Panel>
+        <Panel
+          title="Hardware indicators"
+          detail="Reported by your ESP32 firmware"
+        >
+          <DeviceVisual reading={r} fresh={m.fresh} />
+          <div className="led-list">
+            {[
+              [
+                "Green LED",
+                m.fresh ? (r?.greenLED ? "On" : "Off") : "Unavailable",
+                "green",
+              ],
+              [
+                "Red LED",
+                m.fresh
+                  ? r?.redLEDBlinking
+                    ? "Blinking"
+                    : r?.redLED
+                      ? "On"
+                      : "Off"
+                  : "Unavailable",
+                "red",
+              ],
+              [
+                "Motion LED",
+                m.fresh ? (r?.motionLED ? "On" : "Off") : "Unavailable",
+                "blue",
+              ],
+            ].map(([label, state, color]) => (
+              <div key={label}>
+                <span
+                  className={`led ${state === "On" || state === "Blinking" ? color : ""}`}
+                />
+                <strong>{label}</strong>
+                <span>{state}</span>
+              </div>
+            ))}
+          </div>
+          <div className="hardware-note">
+            <CircleHelp size={16} />
+            <p>
+              Simplified device layout, not a wiring guide. LED states follow received reports; “Blinking” indicates warning mode, not synchronized flashes.
+            </p>
+          </div>
+        </Panel>
+        <Panel
+          title="Recent activity"
+          detail="Sensor and temperature state changes"
+          action={
+            <Link className="text-link" href="/alerts">
+              View history <ArrowRight size={14} />
+            </Link>
+          }
+        >
+          <EventList events={m.events.slice(-5)} />
         </Panel>
         <Panel
           title="Device connection"
@@ -516,61 +581,6 @@ function Overview() {
           <Link className="panel-link" href="/device">
             View device information <ArrowRight size={15} />
           </Link>
-        </Panel>
-        <Panel
-          title="Recent activity"
-          detail="Sensor and temperature state changes"
-          action={
-            <Link className="text-link" href="/alerts">
-              View history <ArrowRight size={14} />
-            </Link>
-          }
-        >
-          <EventList events={m.events.slice(-5)} />
-        </Panel>
-        <Panel
-          title="Hardware indicators"
-          detail="Reported by your ESP32 firmware"
-        >
-          <div className="led-list">
-            {[
-              [
-                "Green LED",
-                m.fresh ? (r?.greenLED ? "On" : "Off") : "Unavailable",
-                "green",
-              ],
-              [
-                "Red LED",
-                m.fresh
-                  ? r?.redLEDBlinking
-                    ? "Blinking"
-                    : r?.redLED
-                      ? "On"
-                      : "Off"
-                  : "Unavailable",
-                "red",
-              ],
-              [
-                "Motion LED",
-                m.fresh ? (r?.motionLED ? "On" : "Off") : "Unavailable",
-                "blue",
-              ],
-            ].map(([label, state, color]) => (
-              <div key={label}>
-                <span
-                  className={`led ${state === "On" || state === "Blinking" ? color : ""}`}
-                />
-                <strong>{label}</strong>
-                <span>{state}</span>
-              </div>
-            ))}
-          </div>
-          <div className="hardware-note">
-            <CircleHelp size={16} />
-            <p>
-              Indicators mirror the device. Warning mode is shown as “Blinking.”
-            </p>
-          </div>
         </Panel>
       </div>
     </>
@@ -739,11 +749,13 @@ function Motion() {
         <Panel title="Current motion state">
           <div className="feature-value">
             <Activity />
-            {m.fresh
-              ? m.motion
-                ? "Motion detected"
-                : "No motion detected"
-              : "Unavailable"}
+            {m.paused
+              ? "Monitoring paused"
+              : m.fresh
+                ? m.motion
+                  ? "Motion detected"
+                  : "No motion detected"
+                : "Unavailable"}
           </div>
           <p className="padded-note">
             Last detected: {m.formatTime(m.lastMotion)}
@@ -815,8 +827,60 @@ function Alerts() {
 }
 function Device() {
   const m = useMonitor();
+  const supported = typeof m.latest?.monitoringEnabled === "boolean";
+  const pending =
+    m.requestedMonitoring !== null &&
+    supported &&
+    m.requestedMonitoring !== m.latest?.monitoringEnabled;
   return (
     <>
+      <Panel
+        title="Monitoring control"
+        detail="Pause sensors and LEDs while keeping Wi-Fi connected. This does not cut ESP32 power."
+      >
+        <div className="section-toolbar control-toolbar">
+          <p role="status">
+            {!m.fresh
+              ? "Device unavailable. Reconnect it before sending a command."
+              : !supported
+                ? "Upload the updated firmware to enable monitoring control."
+                : pending
+                  ? `Waiting for device to ${m.requestedMonitoring ? "resume" : "pause"} monitoring…`
+                  : m.paused
+                    ? "Monitoring is off. Wi-Fi remains connected."
+                    : "Monitoring is on."}
+          </p>
+          <Button
+            variant="outline"
+            disabled={
+              !m.canControl ||
+              !m.connected ||
+              !m.fresh ||
+              !supported ||
+              m.requestedMonitoring === null ||
+              m.controlSaving
+            }
+            onClick={() => void m.requestMonitoring(!m.requestedMonitoring)}
+          >
+            {m.controlSaving
+              ? "Sending…"
+              : m.requestedMonitoring === false
+                ? "Turn monitoring on"
+                : "Turn monitoring off"}
+          </Button>
+        </div>
+        {!m.canControl && (
+          <p className="padded-note">
+            Viewing access only. Ask your administrator for device control
+            access.
+          </p>
+        )}
+        {m.controlError && (
+          <p className="padded-note" role="alert">
+            {m.controlError}
+          </p>
+        )}
+      </Panel>
       <Panel
         title="Smart Classroom Monitor"
         detail={deviceId}
